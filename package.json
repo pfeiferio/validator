@@ -1,0 +1,55 @@
+{
+  "name": "@pfeiferio/validator",
+  "version": "0.1.0",
+  "description": "TypeScript-first schema validation for APIs and forms with explicit parameters and async support",
+  "license": "MIT",
+  "author": "Pascal Pfeifer <pascal@pfeifer.zone>",
+  "sideEffects": false,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "validation",
+    "schema",
+    "api",
+    "typescript",
+    "nodejs"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pfeiferio/validator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pfeiferio/validator/issues"
+  },
+  "homepage": "https://github.com/pfeiferio/validator#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --test",
+    "test:coverage": "npm run build && node --test --experimental-test-coverage",
+    "test:watch": "node --test --watch",
+    "prepublishOnly": "npm run clean && npm test",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.9",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@pfeiferio/check-primitives": "^1.0.1"
+  }
+}
