@@ -1,13 +1,13 @@
-export class SearchResult {
+export class SearchResult<Sanitized> {
   readonly #match: boolean
-  readonly #result?: unknown
+  readonly #result?: Sanitized | undefined
 
-  constructor(match: boolean, result?: unknown) {
+  constructor(match: boolean, result?: Sanitized | undefined) {
     this.#match = match
     this.#result = result
   }
 
-  get result(): unknown {
+  get result(): Sanitized | undefined {
     return this.#result
   }
 

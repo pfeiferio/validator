@@ -1,27 +1,33 @@
 import {validateParameter} from "../validate/validateParameter.js";
 import {GlobalContext} from "../context/GlobalContext.js";
 import {ErrorStore} from "./ErrorStore.js";
-import type {SearchStore} from "../search/SearchStore.js";
-import type {DynamicScheme, IParameterReferenceBase} from "./types.js";
+import {SearchStore} from "../search/SearchStore.js";
+import type {Parameter, ParameterAsync, ParameterRaw, ParameterSync, ParameterUnvalidated} from "./types.js";
 import {SchemaError} from "./SchemaError.js";
 
-export type SchemaValidationResult<IsAsync extends boolean> = {
+export type SchemaValidationResult = {
   errors: ErrorStore
-  global: GlobalContext<unknown, IsAsync>
+  global: GlobalContext<unknown>
 }
 
-export class Schema<IsAsync extends boolean> {
+export class Schema<AsyncGuarantee extends boolean> {
 
-  #isAsync: IsAsync = false as IsAsync
+  #parameters: Parameter[] = [];
 
-  #parameters: IParameterReferenceBase<unknown, boolean>[] = [];
-
-  add<T extends boolean>(value: IParameterReferenceBase<unknown, T>): Schema<IsAsync extends true ? true : T> {
+  add<T>(value: ParameterUnvalidated<T>): Schema<AsyncGuarantee extends true ? true : false>
+  add<T>(value: ParameterAsync<T>): Schema<true>
+  add<T>(value: ParameterSync<T>): Schema<AsyncGuarantee extends true ? true : false>
+  add<T>(value: ParameterRaw<T>): Schema<AsyncGuarantee extends true ? true : false>
+  add<T>(
+    value: ParameterUnvalidated<T>
+      | ParameterRaw<T>
+      | ParameterSync<T>
+      | ParameterAsync<T>): Schema<AsyncGuarantee extends true ? true : false> | Schema<boolean> {
     this.#parameters.push(value)
     return this as any
   }
 
-  get parameters(): IParameterReferenceBase<unknown, IsAsync extends true ? true : false>[] {
+  get parameters(): Parameter[] {
     return this.#parameters as any
   }
 
@@ -29,9 +35,9 @@ export class Schema<IsAsync extends boolean> {
     store: SearchStore,
     idx: number,
     errors: ErrorStore,
-    global: GlobalContext<unknown, IsAsync>,
+    global: GlobalContext<unknown>,
     result: Record<string, unknown>
-  ): SchemaValidationResult<IsAsync> | Promise<SchemaValidationResult<IsAsync>> {
+  ): SchemaValidationResult | Promise<SchemaValidationResult> {
     for (let i = idx; i < this.#parameters.length; i++) {
       const param = this.#parameters[i]!
       param.freeze()
@@ -56,9 +62,9 @@ export class Schema<IsAsync extends boolean> {
   #walkRules(
     idx: number,
     errors: ErrorStore,
-    global: GlobalContext<unknown, IsAsync>,
+    global: GlobalContext<unknown>,
     result: Record<string, unknown>
-  ): SchemaValidationResult<IsAsync> | Promise<SchemaValidationResult<IsAsync>> {
+  ): SchemaValidationResult | Promise<SchemaValidationResult> {
 
     const rules = global.rules
     for (let i = idx; i < rules.length; i++) {
@@ -74,14 +80,16 @@ export class Schema<IsAsync extends boolean> {
     return {errors, global}
   }
 
-  get isAsync(): IsAsync {
-    return this.#isAsync
-  }
+  validate(store: SearchStore | Record<string, unknown>): AsyncGuarantee extends true
+    ? Promise<SchemaValidationResult>
+    : Promise<SchemaValidationResult> | SchemaValidationResult {
 
-  validate(store: SearchStore): DynamicScheme<IsAsync> {
-    this.#isAsync = this.#parameters.some(parameter => parameter.isAsync) as IsAsync
+    if (!(store instanceof SearchStore)) {
+      store = new SearchStore(store)
+    }
+
     const errors = new ErrorStore()
-    const global = new GlobalContext<unknown, IsAsync>()
+    const global = new GlobalContext<unknown>()
     const result: Record<string, unknown> = {}
 
     return this.#walkParameters(store, 0, errors, global, result) as any

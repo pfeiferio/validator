@@ -9,7 +9,8 @@
 
 A small, TypeScript-first validation framework for APIs and forms.
 
-It focuses on **explicit parameters**, **schema-based validation**, and **full control over validation logic** – including synchronous and asynchronous rules, nested objects, and precise error paths.
+It focuses on **explicit parameters**, **schema-based validation**, and **full control over validation logic** —
+including synchronous and asynchronous rules, nested objects, value transformation, and precise error paths.
 
 If you prefer clarity over magic and want validation and transformation in one place, this library is for you.
 
@@ -17,7 +18,7 @@ If you prefer clarity over magic and want validation and transformation in one p
 
 ## Why this library exists
 
-Most validation libraries optimize for brevity or implicit inference.  
+Most validation libraries optimize for brevity or implicit inference.
 `@pfeiferio/validator` optimizes for **control and predictability**.
 
 - No decorators
@@ -25,6 +26,7 @@ Most validation libraries optimize for brevity or implicit inference.
 - No JSON Schema indirection
 
 Instead, you explicitly define:
+
 - which parameters exist
 - when they are required
 - how they are validated
@@ -38,28 +40,32 @@ This makes it especially well suited for **backend APIs** and **complex request 
 
 ```bash
 npm install @pfeiferio/validator
-````
+```
 
 ---
 
 ## Quick Example
 
 ```ts
-import {Schema, ParameterReference, SearchStore} from '@pfeiferio/validator'
+import {Schema, createParameter} from '@pfeiferio/validator'
 import {checkString, checkNumber} from '@pfeiferio/check-primitives'
 
-const schema = new Schema()
-  .add(new ParameterReference('name').validation(checkString))
-  .add(new ParameterReference('age').validation(checkNumber))
+const name = createParameter('name')
+  .validation(checkString)
 
-const store = new SearchStore({name: 'Alice', age: 30})
-const result = schema.validate(store)
+const age = createParameter('age')
+  .validation(checkNumber)
+
+const schema = new Schema()
+  .add(name)
+  .add(age)
+
+const result = schema.validate({name: 'Alice', age: 30})
 
 if (result.errors.hasErrors()) {
   console.log(result.errors.errors)
 } else {
-  const name = schema.parameters[0].value
-  const age = schema.parameters[1].value
+  console.log(name.value, age.value)
 }
 ```
 
@@ -67,45 +73,73 @@ if (result.errors.hasErrors()) {
 
 ## Core Concepts
 
-### ParameterReference
+### Parameters
 
-Represents a single input parameter.
+A parameter represents a single input value.
 
-* defines whether a value is required
-* validates and transforms the value
-* supports conditional requirements
-* supports arrays and nested objects
+Parameters:
+
+* can be required or optional
+* validate and transform values
+* can be synchronous or asynchronous
+* support arrays and nested objects
+* expose their sanitized value after validation
 
 ```ts
-new ParameterReference('email')
+const email = createParameter('email')
   .validation(value => value.toLowerCase())
+```
+
+Async validation:
+
+```ts
+const username = createParameter('username')
+  .asyncValidation(async value => {
+    await checkAvailability(value)
+    return value
+  })
 ```
 
 ---
 
 ### Schema
 
-A schema groups multiple parameters and controls validation execution.
+A schema groups parameters and controls validation execution.
 
 ```ts
 const schema = new Schema()
   .add(param1)
   .add(param2)
-
-const result = schema.validate(store)
 ```
 
-Schemas automatically become **async** if any parameter uses async validation.
+Validation:
+
+```ts
+const result = schema.validate(data)
+```
+
+`data` can be:
+
+* a plain object
+* a `SearchStore` (advanced use)
+
+Schemas automatically handle sync and async parameters.
+If async validation is involved, `validate()` returns a Promise.
 
 ---
 
-### SearchStore
+### SearchStore (advanced)
 
-A simple container for input data.
+`SearchStore` is a thin abstraction over input data with helper methods like `get()` and `has()`.
 
 ```ts
+import {SearchStore} from '@pfeiferio/validator'
+
 const store = new SearchStore(req.body)
+schema.validate(store)
 ```
+
+Using plain data is recommended unless you need advanced control.
 
 ---
 
@@ -116,9 +150,31 @@ Validation errors include precise paths, making them easy to map back to APIs or
 ```ts
 {
   path: 'user.email',
-  name: 'email',
-  reason: 'email.invalidFormat'
+    name
+:
+  'email',
+    reason
+:
+  'email.invalidFormat'
 }
+```
+
+---
+
+## Sync vs Async
+
+Parameters can be synchronous or asynchronous.
+
+The schema automatically detects async usage and behaves accordingly.
+
+Helper guards are available:
+
+```ts
+import {
+  isParameter,
+  isParameterSync,
+  isParameterAsync
+} from '@pfeiferio/validator'
 ```
 
 ---
@@ -140,7 +196,7 @@ Validation errors include precise paths, making them easy to map back to APIs or
 
 ## Documentation
 
-Full documentation and advanced examples can be found in:
+Advanced examples and internal concepts can be found in:
 
 ```
 /docs

@@ -4,13 +4,13 @@ import {resolveMany} from './resolveMany.js'
 import type {ErrorStore} from "../schema/ErrorStore.js";
 import type {ResolveContext} from "../context/ResolveContext.js";
 import type {ResolvedResult} from "./utils.js";
-import type {IParameterReferenceBase} from "../schema/types.js";
+import type {Parameter} from "../schema/types.js";
 
-export function resolveLeaf<Sanitized, IsAsync extends boolean>(
+export function resolveLeaf<Sanitized>(
   value: unknown,
-  parameter: IParameterReferenceBase<Sanitized, IsAsync>,
+  parameter: Parameter,
   errorStore: ErrorStore,
-  ctx: ResolveContext<Sanitized, IsAsync>
+  ctx: ResolveContext<Sanitized>
 ): ResolvedResult<Sanitized> {
 
   parameter.freeze()

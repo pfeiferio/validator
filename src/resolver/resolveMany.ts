@@ -3,14 +3,14 @@ import {resolveLeaf} from './resolveLeaf.js'
 import type {ErrorStore} from "../schema/ErrorStore.js";
 import type {ResolveContext} from "../context/ResolveContext.js";
 import {createIssue} from "../schema/createIssue.js";
-import type {IParameterReferenceBase} from "../schema/types.js";
+import type {Parameter} from "../schema/types.js";
 import {assertArray} from "@pfeiferio/check-primitives";
 
-export function resolveMany<Sanitized, IsAsync extends boolean>(
+export function resolveMany<Sanitized>(
   values: unknown,
-  parameter: IParameterReferenceBase<Sanitized, IsAsync>,
+  parameter: Parameter,
   errorStore: ErrorStore,
-  ctx: ResolveContext<Sanitized, IsAsync>
+  ctx: ResolveContext<Sanitized>
 ): ResolvedResult<Sanitized> {
   assertArray(values)
 
@@ -21,7 +21,7 @@ export function resolveMany<Sanitized, IsAsync extends boolean>(
     parameter.validateShape(values)
   } catch (error) {
     const err = error as Error
-    errorStore.processOnce(err)?.add(createIssue<IsAsync>({
+    errorStore.processOnce(err)?.add(createIssue({
       ctx, parameter, error
     }))
   }
@@ -30,12 +30,12 @@ export function resolveMany<Sanitized, IsAsync extends boolean>(
 }
 
 
-function loop<Sanitized, IsAsync extends boolean>(
-  parameter: IParameterReferenceBase<Sanitized, IsAsync>,
+function loop<Sanitized>(
+  parameter: Parameter,
   errorStore: ErrorStore,
   values: Array<unknown>,
   idx: number,
-  ctx: ResolveContext<Sanitized, IsAsync>,
+  ctx: ResolveContext<Sanitized>,
   rawResults: Array<unknown>,
   sanitizedResults: Array<unknown>
 ): ResolvedResult<Sanitized> {

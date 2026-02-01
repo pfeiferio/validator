@@ -1,20 +1,21 @@
-import type {IParameterReferenceAsync, IParameterReferenceBase, IParameterReferenceSync} from "./types.js";
+import type {ParameterAsync, ParameterSync, ParameterUnvalidated} from "./types.js";
 import {SchemaError} from "./SchemaError.js";
+import {ParameterReference} from "./ParameterReference.js";
 
-export function assertAsyncParameter<T>(
-  ref: IParameterReferenceBase<T, boolean>
-): asserts ref is IParameterReferenceAsync<T> {
-  if (!ref.isAsync) {
-    throw new SchemaError(`Assertion failed: Parameter ${ref.name} is not async.`);
-  }
+export function isParameter(value: unknown): value is ParameterUnvalidated<unknown> {
+  return value instanceof ParameterReference
 }
 
-export function assertSyncParameter<T>(
-  ref: IParameterReferenceBase<T, boolean>
-): asserts ref is IParameterReferenceSync<T> {
-  if (ref.isAsync) {
-    throw new SchemaError(`Assertion failed: Parameter ${ref.name} is not sync.`);
-  }
+export function isParameterSync(value: unknown): value is ParameterSync<unknown> {
+  return isParameter(value) && !value.isAsync
+}
+
+export function isParameterRaw(value: unknown): value is ParameterSync<unknown> {
+  return isParameter(value) && value.isNoValidate
+}
+
+export function isParameterAsync(value: unknown): value is ParameterAsync<unknown> {
+  return isParameter(value) && value.isAsync
 }
 
 export function assertNoPromise<T>(value: T, source?: string): T {

@@ -7,13 +7,13 @@ import type {ResolvedResult} from "./utils.js";
 import {ValidationError} from "@pfeiferio/check-primitives";
 import {createIssue} from "../schema/createIssue.js";
 import {SchemaError} from "../schema/SchemaError.js";
-import type {IParameterReferenceBase} from "../schema/types.js";
+import type {Parameter} from "../schema/types.js";
 
-export function resolveFromStore<Sanitized, IsAsync extends boolean>(
+export function resolveFromStore<Sanitized>(
   store: SearchStore,
-  parameter: IParameterReferenceBase<Sanitized, IsAsync>,
+  parameter: Parameter,
   errorStore: ErrorStore,
-  ctx: ResolveContext<Sanitized, IsAsync>
+  ctx: ResolveContext<Sanitized>
 ): ResolvedResult<Sanitized> {
   if (!parameter) {
     throw new SchemaError(`ParameterReference missing at path "${ctx.path}"`)
@@ -22,7 +22,7 @@ export function resolveFromStore<Sanitized, IsAsync extends boolean>(
   parameter.freeze()
   ctx.pushRules(parameter.rules);
 
-  const match = Search.search<Sanitized, IsAsync>(store, parameter)
+  const match = Search.search<Sanitized>(store, parameter)
 
   const isMany = parameter.mode === 'many' && !ctx.forceOne
 

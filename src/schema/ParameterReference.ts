@@ -3,23 +3,24 @@ import type {ErrorStore} from "./ErrorStore.js";
 import {createIssue} from "./createIssue.js";
 import type {ResolveContext} from "../context/ResolveContext.js";
 import {SchemaError} from "./SchemaError.js";
-import type {IParameterReferenceAsync, IParameterReferenceBase, IParameterReferenceSync} from "./types.js";
+import type {Parameter, ParameterAsync, ParameterRaw, ParameterSync, ParameterUnvalidated} from "./types.js";
 import {assertNoPromise} from "./utils.js";
 import {ValidationError} from "@pfeiferio/check-primitives";
 
 export type ValidationHandle<T> = (value: RawValue) => T
 export type AsyncValidationHandle<T> = (value: RawValue) => Promise<T>
+
 export type ShapeValidationHandle = (value: unknown[]) => void
 export type ParameterMode = 'one' | 'many'
 
-export type Rule<IsAsync extends boolean> = (
+export type Rule = (
   errors: ErrorStore,
   sanitizedValues: Record<string, unknown>,
-  ctx: ResolveContext<unknown, IsAsync>
+  ctx: ResolveContext<unknown>
 ) => Promise<void> | void
 
+export class ParameterReference<T, AsyncGuarantee extends boolean> implements ParameterUnvalidated<T> {
 
-export class ParameterReference<T, IsAsync extends boolean> implements IParameterReferenceBase<T, IsAsync> {
   #shapeValidationHandle?: ShapeValidationHandle
 
   #mode: ParameterMode = 'one'
@@ -28,10 +29,10 @@ export class ParameterReference<T, IsAsync extends boolean> implements IParamete
   #validationHandle?: ValidationHandle<T>
   #asyncValidationHandle?: AsyncValidationHandle<T>
 
-  #isAsync: IsAsync = false as IsAsync
+  #isAsync: AsyncGuarantee = false as AsyncGuarantee
   #meta: Record<string, unknown> | unknown[] | null = null
 
-  get isAsync(): IsAsync {
+  get isAsync(): boolean {
     return this.#isAsync
   }
 
@@ -43,18 +44,19 @@ export class ParameterReference<T, IsAsync extends boolean> implements IParamete
 
   #propertiesDefinition?:
     | null
-    | Record<string, IParameterReferenceBase<unknown, IsAsync>>
-    | (() => Record<string, IParameterReferenceBase<unknown, IsAsync>>)
+    | Record<string, Parameter>
+    | (() => Record<string, Parameter>)
 
   #frozen = false
 
-  #properties?: Record<string, IParameterReferenceBase<unknown, IsAsync>>
+  #properties?: Record<string, Parameter>
 
   constructor(
     name: string,
     required = true,
     defaultValue: unknown = undefined
   ) {
+
     if (required && defaultValue !== undefined) {
       throw new Error(
         `Parameter "${name}" cannot be required and have a default value`
@@ -74,7 +76,7 @@ export class ParameterReference<T, IsAsync extends boolean> implements IParamete
     this.#value = value
   }
 
-  get properties(): Record<string, IParameterReferenceBase<unknown, IsAsync>> {
+  get properties(): Record<string, Parameter> {
     if (!this.#frozen) {
       throw new Error('ParameterReference not frozen')
     }
@@ -125,14 +127,19 @@ export class ParameterReference<T, IsAsync extends boolean> implements IParamete
 
   #noValidate = false
 
-  noValidation(): IParameterReferenceBase<T, false> {
-    if (this.#validationHandle || this.#asyncValidationHandle) {
+
+  get hasValidation() {
+    return !!(this.#validationHandle || this.#asyncValidationHandle)
+  }
+
+  noValidation(): ParameterRaw<T> {
+    if (this.hasValidation) {
       throw new SchemaError(
         `Parameter "${this.name}": Cannot call noValidation() because a validation (sync or async) is already defined.`
       );
     }
     this.#noValidate = true
-    return this as IParameterReferenceBase<T, false>
+    return this as ParameterRaw<T>
   }
 
   requiredIf(predicate: (sanitizedValues: Record<string, unknown>) => boolean): this {
@@ -161,11 +168,11 @@ export class ParameterReference<T, IsAsync extends boolean> implements IParamete
 
   #path?: string
 
-  get rules(): Rule<IsAsync>[] {
+  get rules(): Rule[] {
     return this.#rules
   }
 
-  #rules: Rule<IsAsync>[] = []
+  #rules: Rule[] = []
 
   freeze(): void {
     if (this.#frozen) {
@@ -205,8 +212,8 @@ export class ParameterReference<T, IsAsync extends boolean> implements IParamete
 
   object(
     properties:
-      | Record<string, IParameterReferenceBase<unknown, IsAsync>>
-      | (() => Record<string, IParameterReferenceBase<unknown, IsAsync>>)
+      | Record<string, Parameter>
+      | (() => Record<string, Parameter>)
   ): this {
     this.#isObject = true
     this.#propertiesDefinition = properties
@@ -228,19 +235,19 @@ export class ParameterReference<T, IsAsync extends boolean> implements IParamete
     return this
   }
 
-  validation(fn: ValidationHandle<T>): IParameterReferenceSync<T> {
+  validation(fn: ValidationHandle<T>): ParameterSync<T> {
     if (this.#noValidate) throw new SchemaError(`Parameter "${this.name}": Cannot set validation after noValidation() was called.`);
     if (this.#asyncValidationHandle) throw new SchemaError('Cannot set sync validation when async is already set');
     this.#validationHandle = fn
-    return this as IParameterReferenceSync<T>
+    return this as ParameterSync<T>
   }
 
-  asyncValidation(fn: AsyncValidationHandle<T>): IParameterReferenceAsync<T> {
+  asyncValidation(fn: AsyncValidationHandle<T>): ParameterAsync<T> {
     if (this.#noValidate) throw new SchemaError(`Parameter "${this.name}": Cannot set async validation after noValidation() was called.`);
     if (this.#validationHandle) throw new SchemaError('Cannot set async validation when sync is already set');
     this.#asyncValidationHandle = fn
-    this.#isAsync = true as IsAsync
-    return this as IParameterReferenceAsync<T>
+    this.#isAsync = true as AsyncGuarantee
+    return this as ParameterAsync<T>
   }
 
   get useAsyncValidation() {
@@ -250,6 +257,10 @@ export class ParameterReference<T, IsAsync extends boolean> implements IParamete
   validateShape(values: unknown[]): this {
     this.#shapeValidationHandle?.(values)
     return this
+  }
+
+  get isNoValidate() {
+    return this.#noValidate
   }
 
   validate(value: unknown): SanitizedValue<T> | Promise<SanitizedValue<T>> {

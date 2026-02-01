@@ -5,14 +5,14 @@ import type {ErrorStore} from "../schema/ErrorStore.js";
 import type {ResolveContext} from "../context/ResolveContext.js";
 import {createIssue} from "../schema/createIssue.js";
 import {SchemaError} from "../schema/SchemaError.js";
-import type {IParameterReferenceBase} from "../schema/types.js";
+import type {Parameter} from "../schema/types.js";
 import {assertObject} from "@pfeiferio/check-primitives";
 
-export function resolveObject<Sanitized, IsAsync extends boolean>(
+export function resolveObject<Sanitized>(
   value: unknown,
-  parameter: IParameterReferenceBase<Sanitized, IsAsync>,
+  parameter: Parameter,
   errorStore: ErrorStore,
-  ctx: ResolveContext<Sanitized, IsAsync>
+  ctx: ResolveContext<Sanitized>
 ): ResolvedResult<Sanitized> {
   assertObject(value)
 
@@ -26,19 +26,19 @@ export function resolveObject<Sanitized, IsAsync extends boolean>(
   return loop(parameter, errorStore, values, 0, ctx, rawResults, sanitizedResults, tmpStore)
 }
 
-function loop<Sanitized, IsAsync extends boolean>(
-  parameter: IParameterReferenceBase<Sanitized, IsAsync>,
+function loop<Sanitized>(
+  parameter: Parameter,
   errorStore: ErrorStore,
-  entries: Array<[string, IParameterReferenceBase<unknown, IsAsync>]>,
+  entries: Array<[string, Parameter]>,
   idx: number,
-  ctx: ResolveContext<Sanitized, IsAsync>,
+  ctx: ResolveContext<Sanitized>,
   rawResults: Record<string, unknown>,
   sanitizedResults: Record<string, unknown>,
   tmpStore: SearchStore
 ): ResolvedResult<Sanitized> {
 
   for (let i = idx; i < entries.length; i++) {
-    const [propName, propParameter] = entries[i] as [string, IParameterReferenceBase<unknown, IsAsync>]
+    const [propName, propParameter] = entries[i] as [string, Parameter]
 
     if (!propParameter) {
       throw new SchemaError(

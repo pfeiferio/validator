@@ -1,14 +1,14 @@
 import type {ResolveContext} from "../context/ResolveContext.js";
-import type {IParameterReferenceBase, ValidationIssue} from "./types.js";
+import type {Parameter, ValidationIssue} from "./types.js";
 import {ValidationError} from "@pfeiferio/check-primitives";
 
-type IssueArguments<IsAsync extends boolean> = {
-  ctx: ResolveContext<unknown, IsAsync>,
-  parameter: IParameterReferenceBase<unknown, IsAsync>,
+type IssueArguments = {
+  ctx: ResolveContext<unknown>,
+  parameter: Parameter,
   error: Error | ValidationError | string | unknown
 }
 
-export function createIssue<IsAsync extends boolean>(issueArguments: IssueArguments<IsAsync>): ValidationIssue {
+export function createIssue(issueArguments: IssueArguments): ValidationIssue {
 
   const ctx = issueArguments.ctx
   const error = issueArguments.error

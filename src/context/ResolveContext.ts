@@ -2,21 +2,21 @@ import {GlobalContext, type PostValidation} from './GlobalContext.js'
 import type {Rule} from "../schema/ParameterReference.js";
 import {assertString} from "@pfeiferio/check-primitives";
 
-export interface ResolveContextOptions<Sanitized, IsAsync extends boolean> {
-  global: GlobalContext<Sanitized, IsAsync>
+export interface ResolveContextOptions<Sanitized> {
+  global: GlobalContext<Sanitized>
   forceOne?: boolean
   name?: string
 }
 
-export class ResolveContext<Sanitized, IsAsync extends boolean> {
+export class ResolveContext<Sanitized> {
   readonly #forceOne: boolean = false
-  readonly #global: GlobalContext<Sanitized, IsAsync>
+  readonly #global: GlobalContext<Sanitized>
   readonly #paths: string[]
   readonly #name: string
 
   constructor(
     path: string | string[],
-    {global, forceOne = false, name}: ResolveContextOptions<Sanitized, IsAsync>
+    {global, forceOne = false, name}: ResolveContextOptions<Sanitized>
   ) {
 
     if (!Array.isArray(path)) {
@@ -42,11 +42,11 @@ export class ResolveContext<Sanitized, IsAsync extends boolean> {
     return this.#forceOne
   }
 
-  get postValidations(): PostValidation<Sanitized, IsAsync>[] {
+  get postValidations(): PostValidation<Sanitized>[] {
     return this.#global.postValidations
   }
 
-  pushRules(rules: Rule<IsAsync>[]) {
+  pushRules(rules: Rule[]) {
     rules.forEach(rule => this.#global.rules.push({rule, ctx: this}))
   }
 
@@ -54,14 +54,14 @@ export class ResolveContext<Sanitized, IsAsync extends boolean> {
     return this.#paths.join('.')
   }
 
-  child(path: string): ResolveContext<Sanitized, IsAsync> {
+  child(path: string): ResolveContext<Sanitized> {
     return new ResolveContext([...this.#paths, path], {
       global: this.#global,
       forceOne: false
     })
   }
 
-  item(path: string): ResolveContext<Sanitized, IsAsync> {
+  item(path: string): ResolveContext<Sanitized> {
     return new ResolveContext([...this.#paths, path], {
       name: path,
       global: this.#global,

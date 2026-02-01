@@ -4,29 +4,28 @@ import {ResolveContext} from '../context/ResolveContext.js'
 import {ErrorStore} from '../schema/ErrorStore.js'
 import type {SearchStore} from '../search/SearchStore.js'
 import {createIssue} from "../schema/createIssue.js";
-import type {IParameterReferenceBase} from "../schema/types.js";
+import type {Parameter} from "../schema/types.js";
 
-export interface ValidateParameterResult<Sanitized, IsAsync extends boolean> {
+export interface ValidateParameterResult<Sanitized> {
   errors: ErrorStore
-  ctx: ResolveContext<Sanitized, IsAsync>
+  ctx: ResolveContext<Sanitized>
 }
 
-export function validateParameter<Sanitized, IsAsync extends boolean>(
+export function validateParameter<Sanitized>(
   store: SearchStore,
-  parameter: IParameterReferenceBase<Sanitized, IsAsync>,
+  parameter: Parameter,
   errorStore: ErrorStore | null = null,
-  globalContext: GlobalContext<Sanitized, IsAsync> | null = null
-): Promise<ValidateParameterResult<Sanitized, IsAsync>> | ValidateParameterResult<Sanitized, IsAsync> {
+  globalContext: GlobalContext<Sanitized> | null = null
+): Promise<ValidateParameterResult<Sanitized>> | ValidateParameterResult<Sanitized> {
   errorStore ??= new ErrorStore()
-  const ctx = new ResolveContext<Sanitized, IsAsync>(parameter.name, {
+  const ctx = new ResolveContext<Sanitized>(parameter.name, {
     global: globalContext ?? new GlobalContext()
   })
 
   try {
-
     const resolved = resolveFromStore(
       store,
-      parameter as IParameterReferenceBase<Sanitized, IsAsync>,
+      parameter,
       errorStore,
       ctx
     )

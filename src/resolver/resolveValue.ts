@@ -2,13 +2,13 @@ import type {ResolveContext} from "../context/ResolveContext.js";
 import type {ErrorStore} from "../schema/ErrorStore.js";
 import type {ResolvedResult, Value} from "./utils.js";
 import {createIssue} from "../schema/createIssue.js";
-import type {IParameterReferenceBase} from "../schema/types.js";
+import type {Parameter} from "../schema/types.js";
 
-export function resolveValue<Sanitized, IsAsync extends boolean>(
+export function resolveValue<Sanitized>(
   value: unknown,
-  parameter: IParameterReferenceBase<Sanitized, IsAsync>,
+  parameter: Parameter,
   errorStore: ErrorStore,
-  ctx: ResolveContext<Sanitized, IsAsync>
+  ctx: ResolveContext<Sanitized>
 ): ResolvedResult<Sanitized> {
   const raw = value
   let sanitized

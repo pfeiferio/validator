@@ -1,15 +1,16 @@
 import {SearchResult} from './SearchResult.js'
 import type {SearchStore} from './SearchStore.js'
-import type {IParameterReferenceBase} from "../schema/types.js";
+import type {Parameter} from "../schema/types.js";
 
 export class Search {
-  static search<Sanitized, IsAsync extends boolean>(
+
+  static search<Sanitized = any>(
     store: SearchStore,
-    parameter: IParameterReferenceBase<Sanitized, IsAsync>
-  ): SearchResult {
+    parameter: Parameter
+  ): SearchResult<Sanitized> {
     if (store.has(parameter.name)) {
-      return new SearchResult(true, store.get(parameter.name))
+      return new SearchResult<Sanitized>(true, store.get<Sanitized>(parameter.name))
     }
-    return new SearchResult(false)
+    return new SearchResult<Sanitized>(false)
   }
 }
