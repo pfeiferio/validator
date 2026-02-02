@@ -5,7 +5,6 @@
 ![license](https://img.shields.io/npm/l/@pfeiferio/validator)
 ![downloads](https://img.shields.io/npm/dm/@pfeiferio/validator)
 ![node](https://img.shields.io/node/v/@pfeiferio/validator)
-![size](https://img.shields.io/bundlephobia/min/@pfeiferio/validator)
 
 A small, TypeScript-first validation framework for APIs and forms.
 
@@ -18,8 +17,8 @@ If you prefer clarity over magic and want validation and transformation in one p
 
 ## Why this library exists
 
-Most validation libraries optimize for brevity or implicit inference.
-`@pfeiferio/validator` optimizes for **control and predictability**.
+Most validation libraries optimize for brevity or implicit inference. `@pfeiferio/validator` optimizes for **control and
+predictability**.
 
 - No decorators
 - No hidden schema magic
@@ -123,8 +122,106 @@ const result = schema.validate(data)
 * a plain object
 * a `SearchStore` (advanced use)
 
-Schemas automatically handle sync and async parameters.
-If async validation is involved, `validate()` returns a Promise.
+Schemas automatically handle sync and async parameters. If async validation is involved, `validate()` returns a Promise.
+
+---
+
+## Advanced Examples
+
+### Working with Arrays and Nested Objects
+
+You can validate arrays of objects and access individual nodes in the execution tree:
+
+```ts
+import {createParameter, Schema} from '@pfeiferio/validator'
+
+const age = createParameter('age').noValidation()
+const name = createParameter('name').noValidation()
+
+const user = createParameter('user')
+  .object({age, name})
+  .many()
+
+const schema = new Schema()
+const result = await schema.add(user).validate({
+  user: [
+    {age: 18, name: 'max'},
+    {age: 20, name: 'ben'},
+    {age: 22, name: 'johnny'}
+  ]
+})
+
+// Access all user nodes
+result.nodes(user).map(node => node.value)
+// → [{ age: 18, name: 'max' }, { age: 20, name: 'ben' }, { age: 22, name: 'johnny' }]
+
+// Access all age values
+result.nodes(age).map(node => node.value)
+// → [18, 20, 22]
+
+// Access first age
+result.nodes(age).at(0)?.value
+// → 18
+
+// Access last age
+result.nodes(age).at(-1)?.value
+// → 22
+```
+
+### Conditional Requirements with `requiredIf`
+
+You can define dynamic requirements based on other field values using the execution tree:
+
+```ts
+import {createParameter, Schema} from '@pfeiferio/validator'
+
+const age = createParameter('age').noValidation()
+const name = createParameter('name').noValidation()
+
+const parentName = createParameter('parentName', false)
+  .requiredIf((sanitizedValues, node, requiredIfCtx) => {
+    const ageNode = node.siblings(age).at(0)
+
+    if (!ageNode || ageNode.value >= 18) {
+      return false
+    }
+
+    requiredIfCtx
+      .dependsOn(ageNode)
+      .reason('age.min.18')
+
+    return true
+  })
+  .noValidation()
+
+const user = createParameter('user')
+  .object({age, name, parentName})
+  .many()
+
+const schema = new Schema()
+const result = await schema.add(user).validate({
+  user: [
+    {age: 37, name: 'max'},
+    {age: 14, name: 'ben'},           // Missing parentName → ERROR
+    {age: 22, name: 'johnny'}
+  ]
+})
+
+console.log(result.errors.errors)
+/**
+ * [
+ *   {
+ *     path: 'user.1.parentName',
+ *     name: 'parentName',
+ *     reason: 'required.if',
+ *     context: {
+ *       dependsOn: ['user.1.age'],
+ *       reasons: ['age.min.18']
+ *     }
+ *   }
+ * ]
+ */
+```
 
 ---
 
@@ -159,6 +256,28 @@ Validation errors include precise paths, making them easy to map back to APIs or
 }
 ```
 
+For conditional requirements, errors include context about dependencies:
+
+```ts
+{
+  path: 'user.1.parentName',
+    name
+:
+  'parentName',
+    reason
+:
+  'required.if',
+    context
+:
+  {
+    dependsOn: ['user.1.age'],
+      reasons
+  :
+    ['age.min.18']
+  }
+}
+```
+
 ---
 
 ## Sync vs Async
@@ -185,6 +304,7 @@ import {
 * You need async validation (e.g. database checks)
 * You validate complex, nested request payloads
 * You want validation and transformation in one step
+* You need access to the validation execution tree (for cross-field validation)
 
 ## When not to use it
 

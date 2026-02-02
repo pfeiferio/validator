@@ -37,14 +37,14 @@ export class NodeList extends Array<ExecutionNode> {
   }
 
   first() {
-    return this.eq(0)
+    return this.at(0)
   }
 
   last() {
-    return this.eq(-1)
+    return this.at(-1)
   }
 
-  eq(idx: number = 0) {
+  at(idx: number = 0): ExecutionNode | undefined {
     if (idx < 0) idx = this.length + idx
     return this[idx]
   }

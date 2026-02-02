@@ -20,7 +20,7 @@ describe('Execution Tree & Node Navigation', () => {
 
           const siblingsOfA = nodeA.siblings()
           assert.strictEqual(siblingsOfA.length, 1)
-          assert.strictEqual(siblingsOfA.eq(), nodeB)
+          assert.strictEqual(siblingsOfA.at(), nodeB)
 
           return false
         })
@@ -50,8 +50,8 @@ describe('Execution Tree & Node Navigation', () => {
     const children = userNodes.children()
     // assert.strictEqual(children.length, 2)
 
-    assert.strictEqual(children.eq(0).children.eq().is(age), true)
-    assert.strictEqual(children.eq(1).children.eq().value, 20)
+    assert.strictEqual(children.at(0).children.at().is(age), true)
+    assert.strictEqual(children.at(1).children.at().value, 20)
   })
 
   test('parent and children references must be consistent', async () => {
@@ -64,7 +64,7 @@ describe('Execution Tree & Node Navigation', () => {
         user: [{age: 5}]
       })
 
-    const ageNode = result.nodes(age).eq()
+    const ageNode = result.nodes(age).at()
     const userItemNode = ageNode.parent
     const userContainerNode = userItemNode.parent
 
@@ -86,9 +86,9 @@ describe('Execution Tree & Node Navigation', () => {
 
     const nodes = result.nodes(a)
 
-    assert.strictEqual(nodes.eq(), nodes.eq(0))
-    assert.strictEqual(nodes.eq(1), undefined)
-    assert.strictEqual(nodes.eq(999), undefined)
+    assert.strictEqual(nodes.at(), nodes.at(0))
+    assert.strictEqual(nodes.at(1), undefined)
+    assert.strictEqual(nodes.at(999), undefined)
   })
 
   test('siblings should be symmetric', async () => {
@@ -102,9 +102,9 @@ describe('Execution Tree & Node Navigation', () => {
       .add(c)
       .validate({a: 1, b: 2, c: 3})
 
-    const nodeA = result.nodes(a).eq()
-    const nodeB = result.nodes(b).eq()
-    const nodeC = result.nodes(c).eq()
+    const nodeA = result.nodes(a).at()
+    const nodeB = result.nodes(b).at()
+    const nodeC = result.nodes(c).at()
 
     assert.ok(nodeA.siblings().includes(nodeB))
     assert.ok(nodeA.siblings().includes(nodeC))
@@ -118,7 +118,7 @@ describe('Execution Tree & Node Navigation', () => {
       .add(a)
       .validate({a: 1})
 
-    const nodeA = result.nodes(a).eq()
+    const nodeA = result.nodes(a).at()
     const siblings = nodeA.siblings()
 
     assert.strictEqual(siblings.length, 0)
@@ -131,7 +131,7 @@ describe('Execution Tree & Node Navigation', () => {
       .add(a)
       .validate({a: 1})
 
-    const nodeA = result.nodes(a).eq()
+    const nodeA = result.nodes(a).at()
     assert.strictEqual(nodeA.siblings().length, 0)
   })
 
@@ -142,7 +142,7 @@ describe('Execution Tree & Node Navigation', () => {
       .add(a)
       .validate({a: 1})
 
-    const nodeA = result.nodes(a).eq()
+    const nodeA = result.nodes(a).at()
     assert.strictEqual(nodeA.children.length, 0)
   })
   test('deep tree navigation should remain consistent', async () => {
@@ -162,7 +162,7 @@ describe('Execution Tree & Node Navigation', () => {
     const ageNodes = result.nodes(age)
     assert.strictEqual(ageNodes.length, 2)
 
-    const firstAge = ageNodes.eq()
+    const firstAge = ageNodes.at()
     assert.strictEqual(firstAge.parent.parent.is(user), true)
   })
   test('result.nodes should return stable node identities', async () => {
@@ -172,8 +172,8 @@ describe('Execution Tree & Node Navigation', () => {
       .add(a)
       .validate({a: 1})
 
-    const n1 = result.nodes(a).eq()
-    const n2 = result.nodes(a).eq()
+    const n1 = result.nodes(a).at()
+    const n2 = result.nodes(a).at()
 
     assert.strictEqual(n1, n2)
   })
@@ -189,8 +189,8 @@ describe('Execution Tree & Node Navigation', () => {
 
     const filtered = result.nodes(a).filter(n => n.value === 1)
 
-    assert.ok(filtered.eq())
-    assert.strictEqual(filtered.eq().value, 1)
+    assert.ok(filtered.at())
+    assert.strictEqual(filtered.at().value, 1)
   })
 
   test('NodeList must be immutable', async () => {
@@ -198,10 +198,10 @@ describe('Execution Tree & Node Navigation', () => {
     const result = await new Schema().add(a).validate({a: 1})
 
     const nodes = result.nodes(a)
-    const before = nodes.eq()
+    const before = nodes.at()
 
     nodes.filter(() => true)
-    assert.strictEqual(nodes.eq(), before)
+    assert.strictEqual(nodes.at(), before)
   })
 
   test('NodeList.filter preserves order', async () => {
@@ -211,7 +211,7 @@ describe('Execution Tree & Node Navigation', () => {
     const nodes = result.nodes(a)
     const filtered = nodes.filter(() => true)
 
-    assert.strictEqual(filtered.eq(), nodes.eq())
+    assert.strictEqual(filtered.at(), nodes.at())
   })
 
   test('children() on empty NodeList returns empty NodeList', async () => {
@@ -229,9 +229,9 @@ describe('Execution Tree & Node Navigation', () => {
 
     const nodes = result.nodes(a)
 
-    assert.strictEqual(nodes.eq(0), nodes.eq(-1))
-    assert.strictEqual(nodes.eq(-2), undefined)
-    assert.strictEqual(nodes.eq(1), undefined)
+    assert.strictEqual(nodes.at(0), nodes.at(-1))
+    assert.strictEqual(nodes.at(-2), undefined)
+    assert.strictEqual(nodes.at(1), undefined)
   })
 
   test('siblings never include self', async () => {
@@ -242,7 +242,7 @@ describe('Execution Tree & Node Navigation', () => {
       .add(a).add(b)
       .validate({a: 1, b: 2})
 
-    const nodeA = result.nodes(a).eq()
+    const nodeA = result.nodes(a).at()
     assert.ok(!nodeA.siblings().includes(nodeA))
   })
 
@@ -254,7 +254,7 @@ describe('Execution Tree & Node Navigation', () => {
       .validate({user: [1, 2, 3]})
 
     const nodes = result.nodes(user).children()
-    assert.strictEqual(nodes.eq(0).siblings().length, 2)
+    assert.strictEqual(nodes.at(0).siblings().length, 2)
   })
 
   test('parent chain must end at root', async () => {
@@ -265,7 +265,7 @@ describe('Execution Tree & Node Navigation', () => {
       .add(user)
       .validate({user: {a: 1}})
 
-    const nodeA = result.nodes(a).eq()
+    const nodeA = result.nodes(a).at()
     assert.strictEqual(nodeA.parent.parent, undefined)
   })
 
@@ -320,7 +320,7 @@ describe('Execution Tree & Node Navigation', () => {
     const parentName = createParameter('parentName', false)
       .noValidation()
       .requiredIf((_, node) => {
-        const ageNode = node.siblings().filter(n => n.is(age)).eq()
+        const ageNode = node.siblings().filter(n => n.is(age)).at()
         return ageNode.value < 14
       })
 
@@ -337,14 +337,14 @@ describe('Execution Tree & Node Navigation', () => {
     const a = createParameter('a').noValidation()
     const result = await new Schema().add(a).validate({a: 1})
 
-    assert.strictEqual(result.nodes(a).eq().parent, undefined)
+    assert.strictEqual(result.nodes(a).at().parent, undefined)
   })
 
   test('children on leaf node is always empty NodeList', async () => {
     const a = createParameter('a').noValidation()
     const result = await new Schema().add(a).validate({a: 1})
 
-    assert.strictEqual(result.nodes(a).eq().children.length, 0)
+    assert.strictEqual(result.nodes(a).at().children.length, 0)
   })
 
   test('get value should correctly resolve leaf, object and array nodes', async () => {
@@ -370,14 +370,14 @@ describe('Execution Tree & Node Navigation', () => {
       })
 
     // 🔹 ARRAY (root many)
-    const userNode = result.nodes(user).eq()
+    const userNode = result.nodes(user).at()
     assert.deepStrictEqual(userNode.value, [
       {age: 10, name: 'Alice', optional: undefined},
       {age: 20, name: 'Bob', optional: undefined}
     ])
 
     // 🔹 OBJECT
-    const firstUser = userNode.children.eq()
+    const firstUser = userNode.children.at()
     assert.deepStrictEqual(firstUser.value, {
       age: 10,
       name: 'Alice',
@@ -385,11 +385,11 @@ describe('Execution Tree & Node Navigation', () => {
     })
 
     // 🔹 LEAF
-    const ageNode = firstUser.children.filter(n => n.is(age)).eq()
+    const ageNode = firstUser.children.filter(n => n.is(age)).at()
     assert.strictEqual(ageNode.value, 10)
 
     // 🔹 UNDEFINED (optional, not provided)
-    const optionalNode = firstUser.children.filter(n => n.is(optional)).eq()
+    const optionalNode = firstUser.children.filter(n => n.is(optional)).at()
     assert.strictEqual(optionalNode.value, undefined)
   })
 
@@ -398,7 +398,7 @@ describe('Execution Tree & Node Navigation', () => {
     const result = await new Schema().add(a).validate({a: 1})
 
     assert.doesNotThrow(() => {
-      result.nodes(a).eq().value
+      result.nodes(a).at().value
     })
   })
 
@@ -409,7 +409,7 @@ describe('Execution Tree & Node Navigation', () => {
       .add(a)
       .validate({a: 1})
 
-    const node = result.nodes(a).eq()
+    const node = result.nodes(a).at()
     const json = node.toJSON()
 
     assert.deepStrictEqual(json, {name: 'a', children: [], parent: undefined, value: 1, raw: 1, path: 'a'})
@@ -424,12 +424,12 @@ describe('Execution Tree & Node Navigation', () => {
       .add(a).add(b).add(c)
       .validate({a: 1, b: 2, c: 3})
 
-    const nodeA = result.nodes(a).eq()
+    const nodeA = result.nodes(a).at()
     const siblings = nodeA.siblings()
 
     assert.strictEqual(siblings.length, 2)
-    assert.ok(siblings.includes(result.nodes(b).eq()))
-    assert.ok(siblings.includes(result.nodes(c).eq()))
+    assert.ok(siblings.includes(result.nodes(b).at()))
+    assert.ok(siblings.includes(result.nodes(c).at()))
   })
 
   test('siblings(filter) returns only siblings matching parameter', async () => {
@@ -441,11 +441,11 @@ describe('Execution Tree & Node Navigation', () => {
       .add(a).add(b).add(c)
       .validate({a: 1, b: 2, c: 3})
 
-    const nodeA = result.nodes(a).eq()
+    const nodeA = result.nodes(a).at()
     const siblingsB = nodeA.siblings(b)
 
     assert.strictEqual(siblingsB.length, 1)
-    assert.strictEqual(siblingsB.eq(), result.nodes(b).eq())
+    assert.strictEqual(siblingsB.at(), result.nodes(b).at())
   })
 
   test('ExecutionNode.name returns parameter name', async () => {
@@ -455,7 +455,7 @@ describe('Execution Tree & Node Navigation', () => {
       .add(a)
       .validate({a: 1})
 
-    const node = result.nodes(a).eq()
+    const node = result.nodes(a).at()
     assert.strictEqual(node.name, 'a')
   })
 
@@ -467,7 +467,7 @@ describe('Execution Tree & Node Navigation', () => {
       .add(b)
       .validate({b: {a: 1}})
 
-    const nodeA = result.nodes(a).eq()
+    const nodeA = result.nodes(a).at()
     assert.strictEqual(nodeA.path, 'b.a')
   })
 
@@ -479,7 +479,7 @@ describe('Execution Tree & Node Navigation', () => {
       .add(a).add(b)
       .validate({a: 1, b: 2})
 
-    const nodeA = result.nodes(a).eq()
+    const nodeA = result.nodes(a).at()
     const filtered = nodeA.siblings(createParameter('c'))
 
     assert.strictEqual(filtered.length, 0)
@@ -492,7 +492,7 @@ describe('Execution Tree & Node Navigation', () => {
       .add(a)
       .validate({a: 1})
 
-    const node = result.nodes(a).eq()
+    const node = result.nodes(a).at()
 
     // Whitebox: force invalid internal state
     node._collectAs = Symbol('INVALID')
@@ -511,8 +511,8 @@ describe('Execution Tree & Node Navigation', () => {
       .add(b)
       .validate({a: 1, b: 2})
 
-    const nodeA = result.nodes(a).eq()
-    const nodeB = result.nodes(b).eq()
+    const nodeA = result.nodes(a).at()
+    const nodeB = result.nodes(b).at()
 
     assert.strictEqual(nodeA.is(nodeA), true)
     assert.strictEqual(nodeA.is(nodeB), false)
@@ -539,7 +539,7 @@ describe('Execution Tree & Node Navigation', () => {
 
     const nodes = result.nodes(a)
 
-    assert.strictEqual(nodes.first(), nodes.eq(0))
+    assert.strictEqual(nodes.first(), nodes.at(0))
   })
   test('NodeList.last is equivalent to eq(-1)', async () => {
     const a = createParameter('a').noValidation()
@@ -547,7 +547,7 @@ describe('Execution Tree & Node Navigation', () => {
 
     const nodes = result.nodes(a)
 
-    assert.strictEqual(nodes.last(), nodes.eq(-1))
+    assert.strictEqual(nodes.last(), nodes.at(-1))
   })
 
   test('NodeList.first and last return undefined on empty list', async () => {

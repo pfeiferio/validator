@@ -1,6 +1,6 @@
 {
   "name": "@pfeiferio/validator",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "TypeScript-first schema validation for APIs and forms with explicit parameters and async support",
   "license": "MIT",
   "author": "Pascal Pfeifer <pascal@pfeifer.zone>",
