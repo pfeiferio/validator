@@ -68,6 +68,15 @@ if (result.errors.hasErrors()) {
 }
 ```
 
+## Real-world Examples
+
+Real-world usage examples can be found in the `examples/` folder.
+
+➡️ **[View examples](examples/README.md)**
+
+The examples demonstrate framework integrations, reusable parameter definitions
+and execution-node based validation logic.
+
 ---
 
 ## Core Concepts
