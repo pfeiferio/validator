@@ -55,12 +55,12 @@ function loop<Sanitized>(
       if (resolved instanceof Promise) {
         return resolved.then((resolved) => {
           const {raw, sanitized} = resolved
-          rawResults.push({raw})
+          rawResults.push(raw)
           sanitizedResults.push(sanitized)
           return loop(parameter, errorStore, values, i + 1, ctx, rawResults, sanitizedResults)
         }).catch(error => {
           const err = error as Error
-          rawResults.push({raw: INVALID})
+          rawResults.push(INVALID)
           sanitizedResults.push(INVALID)
           errorStore.processOnce(err)?.add(createIssue({
             ctx, parameter, error
@@ -70,11 +70,11 @@ function loop<Sanitized>(
       }
 
       const {raw, sanitized} = resolved
-      rawResults.push({raw})
+      rawResults.push(raw)
       sanitizedResults.push(sanitized)
     } catch (error) {
       const err = error as Error
-      rawResults.push({raw: INVALID})
+      rawResults.push(INVALID)
       sanitizedResults.push(INVALID)
       errorStore.processOnce(err)?.add(createIssue({
         ctx, parameter, error

@@ -8,6 +8,7 @@ import {ValidationError} from "@pfeiferio/check-primitives";
 import {createIssue} from "../schema/createIssue.js";
 import {SchemaError} from "../schema/SchemaError.js";
 import type {Parameter} from "../schema/types.js";
+import {SCHEMA_ERRORS} from "../errors/errors.js";
 
 export function resolveFromStore<Sanitized>(
   store: SearchStore,
@@ -16,7 +17,7 @@ export function resolveFromStore<Sanitized>(
   ctx: ResolveContext<Sanitized>
 ): ResolvedResult<Sanitized> {
   if (!parameter) {
-    throw new SchemaError(`ParameterReference missing at path "${ctx.path}"`)
+    throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.MISSING(ctx))
   }
 
   parameter.freeze()

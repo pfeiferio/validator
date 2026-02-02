@@ -5,7 +5,7 @@ import type {
   ShapeValidationHandle,
   ValidationHandle
 } from "./ParameterReference.js";
-import type {SanitizedValue, Value} from "../resolver/utils.js";
+import type {MetaValue, SanitizedValue, Value} from "../resolver/utils.js";
 
 export interface ValidationIssue {
   path: string
@@ -31,7 +31,7 @@ export interface ParameterBase<T> {
 
   path: string
   value: Value<T>
-  meta: Record<string, unknown> | unknown[] | null
+  meta: MetaValue
 
   readonly defaultValue: unknown | undefined
   exists: boolean

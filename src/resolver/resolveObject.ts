@@ -69,6 +69,7 @@ function loop<Sanitized>(
           errorStore.processOnce(err)?.add(createIssue({
             ctx, parameter, error
           }))
+          sanitizedResults[propName] = INVALID
           rawResults[propName] = INVALID
           return loop(parameter, errorStore, entries, i + 1, ctx, rawResults, sanitizedResults, tmpStore)
         })
@@ -83,6 +84,7 @@ function loop<Sanitized>(
         ctx, parameter, error
       }))
       rawResults[propName] = INVALID
+      sanitizedResults[propName] = INVALID
     }
   }
 

@@ -1,5 +1,10 @@
 export const INVALID = Symbol('invalid')
 
+export type MetaValue = {
+  raw: unknown | undefined
+  //Record<string, unknown> | unknown[] | undefined = undefined
+
+}
 export type RawValue = unknown | undefined
 export type Value<T> = T | undefined | null
 export type SanitizedValue<T> = T | SanitizedObject<T> | undefined

@@ -1,4 +1,4 @@
-import type {RawValue, SanitizedValue, Value} from "../resolver/utils.js";
+import type {MetaValue, RawValue, SanitizedValue, Value} from "../resolver/utils.js";
 import type {ErrorStore} from "./ErrorStore.js";
 import {createIssue} from "./createIssue.js";
 import type {ResolveContext} from "../context/ResolveContext.js";
@@ -6,6 +6,7 @@ import {SchemaError} from "./SchemaError.js";
 import type {Parameter, ParameterAsync, ParameterRaw, ParameterSync, ParameterUnvalidated} from "./types.js";
 import {assertNoPromise} from "./utils.js";
 import {ValidationError} from "@pfeiferio/check-primitives";
+import {SCHEMA_ERRORS} from "../errors/errors.js";
 
 export type ValidationHandle<T> = (value: RawValue) => T
 export type AsyncValidationHandle<T> = (value: RawValue) => Promise<T>
@@ -21,7 +22,7 @@ export type Rule = (
 
 export class ParameterReference<T, AsyncGuarantee extends boolean> implements ParameterUnvalidated<T> {
 
-  #shapeValidationHandle?: ShapeValidationHandle
+  #shapeValidationHandle?: ShapeValidationHandle | undefined
 
   #mode: ParameterMode = 'one'
   #exists: boolean = false
@@ -30,7 +31,9 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
   #asyncValidationHandle?: AsyncValidationHandle<T>
 
   #isAsync: AsyncGuarantee = false as AsyncGuarantee
-  #meta: Record<string, unknown> | unknown[] | null = null
+  #meta: MetaValue = {
+    raw: undefined
+  }
 
   get isAsync(): boolean {
     return this.#isAsync
@@ -95,11 +98,11 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
     return this.#exists
   }
 
-  get meta(): Record<string, unknown> | unknown[] | null {
+  get meta(): MetaValue {
     return this.#meta
   }
 
-  set meta(meta: Record<string, unknown> | unknown[]) {
+  set meta(meta: MetaValue) {
     this.#meta = meta
   }
 
@@ -134,9 +137,7 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
 
   noValidation(): ParameterRaw<T> {
     if (this.hasValidation) {
-      throw new SchemaError(
-        `Parameter "${this.name}": Cannot call noValidation() because a validation (sync or async) is already defined.`
-      );
+      throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_NO_VALIDATE_VALIDATE(this));
     }
     this.#noValidate = true
     return this as ParameterRaw<T>
@@ -186,14 +187,12 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
 
     if (needsValidation && !hasValidation) {
       throw new SchemaError(
-        `Parameter "${this.name}" is missing a validation. Scalar parameters must have a validation handler.`
+        SCHEMA_ERRORS.PARAMETER_REFERENCE.MISSING_VALIDATION(this)
       );
     }
 
     if (this.isRequired && this.#hasRequiredIfRule) {
-      throw new SchemaError(
-        `Invalid schema: parameter "${this.name}" is statically required and has requiredIf rules`
-      )
+      throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.REQUIRED_WITH_IF_REQUIRED(this))
     }
 
     if (this.isArray && this.#defaultValue !== undefined && !Array.isArray(this.#defaultValue)) {
@@ -215,6 +214,8 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
       | Record<string, Parameter>
       | (() => Record<string, Parameter>)
   ): this {
+    if (this.hasValidation) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.VALIDATION_WITH_OBJECT(this))
+
     this.#isObject = true
     this.#propertiesDefinition = properties
     return this
@@ -232,19 +233,22 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
 
   one(): this {
     this.#mode = 'one'
+    this.#shapeValidationHandle = undefined
     return this
   }
 
   validation(fn: ValidationHandle<T>): ParameterSync<T> {
-    if (this.#noValidate) throw new SchemaError(`Parameter "${this.name}": Cannot set validation after noValidation() was called.`);
-    if (this.#asyncValidationHandle) throw new SchemaError('Cannot set sync validation when async is already set');
+    if (this.isObject) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.OBJECT_WITH_VALIDATION(this))
+    if (this.#noValidate) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_SYNC_NO_VALIDATE(this));
+    if (this.#asyncValidationHandle) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_SYNC_ASYNC());
     this.#validationHandle = fn
     return this as ParameterSync<T>
   }
 
   asyncValidation(fn: AsyncValidationHandle<T>): ParameterAsync<T> {
-    if (this.#noValidate) throw new SchemaError(`Parameter "${this.name}": Cannot set async validation after noValidation() was called.`);
-    if (this.#validationHandle) throw new SchemaError('Cannot set async validation when sync is already set');
+    if (this.isObject) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.OBJECT_WITH_VALIDATION(this))
+    if (this.#noValidate) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_ASYNC_NO_VALIDATE(this));
+    if (this.#validationHandle) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_ASYNC_SYNC());
     this.#asyncValidationHandle = fn
     this.#isAsync = true as AsyncGuarantee
     return this as ParameterAsync<T>
@@ -279,11 +283,11 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
     const resultIsPromise = validationResult instanceof Promise
 
     if (this.useAsyncValidation) {
-      if (!resultIsPromise) throw new SchemaError(`"${this.name}": validationAsync() must return a Promise. Keep it consistent.`)
+      if (!resultIsPromise) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_FORCE_ASYNC(this))
       return validationResult as Promise<SanitizedValue<T>>
     }
 
-    if (resultIsPromise) throw new SchemaError(`"${this.name}": Sync validation returned a Promise. Use validationAsync() instead.`)
+    if (resultIsPromise) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.WRONG_VALIDATION_USED(this))
 
     return validationResult as SanitizedValue<T>
   }

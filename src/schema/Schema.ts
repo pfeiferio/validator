@@ -4,6 +4,7 @@ import {ErrorStore} from "./ErrorStore.js";
 import {SearchStore} from "../search/SearchStore.js";
 import type {Parameter, ParameterAsync, ParameterRaw, ParameterSync, ParameterUnvalidated} from "./types.js";
 import {SchemaError} from "./SchemaError.js";
+import {SCHEMA_ERRORS} from "../errors/errors.js";
 
 export type SchemaValidationResult = {
   errors: ErrorStore
@@ -99,11 +100,12 @@ export class Schema<AsyncGuarantee extends boolean> {
 function assertValidationMatch(value: unknown, isAsync: boolean, name: string) {
   const isPromise = value instanceof Promise;
 
+
   if (isPromise && !isAsync) {
-    throw new SchemaError(`Parameter "${name}" is sync, but validation returned a Promise.`);
+    throw new SchemaError(SCHEMA_ERRORS.ASSERTS.VALIDATION_SYNC_RETURNED_PROMISE(name))
   }
 
   if (!isPromise && isAsync) {
-    throw new SchemaError(`Parameter "${name}" is async, but validation returned a sync value.`);
+    throw new SchemaError(SCHEMA_ERRORS.ASSERTS.VALIDATION_ASYNC_RETURNED_SYNC(name))
   }
 }

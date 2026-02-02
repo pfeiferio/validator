@@ -33,7 +33,7 @@ export function validateParameter<Sanitized>(
     if (resolved instanceof Promise) {
       return resolved.then(resolved => {
         const {raw, sanitized} = resolved
-        parameter.meta = raw as Record<string, unknown> | unknown[]
+        parameter.meta.raw = raw as Record<string, unknown> | unknown[]
         parameter.value = sanitized as Sanitized
         return {errors: errorStore, ctx}
       }).catch(error => {
@@ -46,7 +46,7 @@ export function validateParameter<Sanitized>(
     }
 
     const {raw, sanitized} = resolved
-    parameter.meta = raw as Record<string, unknown> | unknown[]
+    parameter.meta.raw = raw as Record<string, unknown> | unknown[]
     parameter.value = sanitized as Sanitized
 
   } catch (error) {
