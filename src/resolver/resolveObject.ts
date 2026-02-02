@@ -7,12 +7,15 @@ import {createIssue} from "../schema/createIssue.js";
 import {SchemaError} from "../schema/SchemaError.js";
 import type {Parameter} from "../schema/types.js";
 import {assertObject} from "@pfeiferio/check-primitives";
+import {COLLECT_AS_OBJECT, collectNewNode} from "../nodes/utils.js";
+import type {ExecutionNode} from "../nodes/ExecutionNode.js";
 
 export function resolveObject<Sanitized>(
   value: unknown,
   parameter: Parameter,
   errorStore: ErrorStore,
-  ctx: ResolveContext<Sanitized>
+  ctx: ResolveContext<Sanitized>,
+  parentNode: ExecutionNode | undefined
 ): ResolvedResult<Sanitized> {
   assertObject(value)
 
@@ -23,10 +26,13 @@ export function resolveObject<Sanitized>(
   const rawResults: Record<string, unknown> = {}
   const values = Object.entries(parameter.properties)
 
-  return loop(parameter, errorStore, values, 0, ctx, rawResults, sanitizedResults, tmpStore)
+  const node = collectNewNode<Sanitized>(COLLECT_AS_OBJECT, parameter, ctx, parentNode)
+
+  return loop(node, parameter, errorStore, values, 0, ctx, rawResults, sanitizedResults, tmpStore)
 }
 
 function loop<Sanitized>(
+  parentNode: ExecutionNode,
   parameter: Parameter,
   errorStore: ErrorStore,
   entries: Array<[string, Parameter]>,
@@ -55,15 +61,17 @@ function loop<Sanitized>(
         tmpStore,
         propParameter,
         errorStore,
-        itemCtx
+        itemCtx,
+        parentNode
       )
 
       if (resolved instanceof Promise) {
         return resolved.then(resolved => {
           const {raw, sanitized} = resolved
+          //collectNewNode(COLLECT_AS_LEAF, propParameter, ctx, parentNode, resolved)
           sanitizedResults[propName] = sanitized
           rawResults[propName] = raw
-          return loop(parameter, errorStore, entries, i + 1, ctx, rawResults, sanitizedResults, tmpStore)
+          return loop(parentNode, parameter, errorStore, entries, i + 1, ctx, rawResults, sanitizedResults, tmpStore)
         }).catch(error => {
           const err = error as Error
           errorStore.processOnce(err)?.add(createIssue({
@@ -71,13 +79,14 @@ function loop<Sanitized>(
           }))
           sanitizedResults[propName] = INVALID
           rawResults[propName] = INVALID
-          return loop(parameter, errorStore, entries, i + 1, ctx, rawResults, sanitizedResults, tmpStore)
+          return loop(parentNode, parameter, errorStore, entries, i + 1, ctx, rawResults, sanitizedResults, tmpStore)
         })
       }
 
       const {raw, sanitized} = resolved
       sanitizedResults[propName] = sanitized
       rawResults[propName] = raw
+      //collectNewNode(COLLECT_AS_LEAF, propParameter, ctx, parentNode, resolved)
     } catch (error) {
       const err = error as Error
       errorStore.processOnce(err)?.add(createIssue({

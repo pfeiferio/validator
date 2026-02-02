@@ -245,7 +245,8 @@ describe('resolveObject', () => {
       const ctx = new ResolveContext('obj', {global: new GlobalContext()})
 
       const result = await resolveObject({name: 'john'}, param, errorStore, ctx)
-
+      console.log({result})
+      process.exit()
       assert.strictEqual(result.raw.name, 'john')
       assert.strictEqual(result.sanitized.name, 'JOHN')
     })

@@ -11,6 +11,12 @@ export const SCHEMA_ERRORS = {
     UNEXPECTED_PROMISE: (source?: string) =>
       `Unexpected Promise: Synchronous schema cannot handle async validation${source ? ` in ${source}` : ''}.`
   },
+  RESOLVE_CONTEXT: {
+    MISSING_NODE: (path: string) => `ExecutionNode not available for context at path "${path}". Node is only available after resolution.`,
+  },
+  EXECUTION_NODE: {
+    INVALID_COLLECT_STATE: () => `Invalid collect state. This indicates an internal schema error.`
+  },
   PARAMETER_REFERENCE: {
     MISSING: (ctx: ResolveContext<unknown>) =>
       `ParameterReference missing at path "${ctx.path}"`,

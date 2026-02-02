@@ -27,7 +27,8 @@ export function validateParameter<Sanitized>(
       store,
       parameter,
       errorStore,
-      ctx
+      ctx,
+      undefined
     )
 
     if (resolved instanceof Promise) {

@@ -7,6 +7,8 @@ import type {Parameter, ParameterAsync, ParameterRaw, ParameterSync, ParameterUn
 import {assertNoPromise} from "./utils.js";
 import {ValidationError} from "@pfeiferio/check-primitives";
 import {SCHEMA_ERRORS} from "../errors/errors.js";
+import type {ExecutionNode} from "../nodes/ExecutionNode.js";
+import {RequiredIfCtx} from "./RequiredIfCtx.js";
 
 export type ValidationHandle<T> = (value: RawValue) => T
 export type AsyncValidationHandle<T> = (value: RawValue) => Promise<T>
@@ -143,16 +145,22 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
     return this as ParameterRaw<T>
   }
 
-  requiredIf(predicate: (sanitizedValues: Record<string, unknown>) => boolean): this {
+  requiredIf(predicate: (sanitizedValues: Record<string, unknown>, node: ExecutionNode, requiredIfCtx: RequiredIfCtx) => boolean): this {
     this.#hasRequiredIfRule = true
     this.#rules.push((errorStore, sanitizedValues, ctx) => {
       if (this.exists) return
+      const requiredIfCtx = new RequiredIfCtx()
+      if (assertNoPromise(
+        predicate(
+          sanitizedValues,
+          ctx.node,
+          requiredIfCtx
+        ), 'requiredIf')) {
 
-      if (assertNoPromise(predicate(sanitizedValues), 'requiredIf')) {
         errorStore.add(createIssue({
           ctx,
           parameter: this as any,
-          error: new ValidationError('required.if')
+          error: new ValidationError('required.if', requiredIfCtx.errorContext)
         }))
       }
     })

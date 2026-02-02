@@ -3,12 +3,15 @@ import type {ErrorStore} from "../schema/ErrorStore.js";
 import type {ResolvedResult, Value} from "./utils.js";
 import {createIssue} from "../schema/createIssue.js";
 import type {Parameter} from "../schema/types.js";
+import {COLLECT_AS_VALUE, collectNewNode} from "../nodes/utils.js";
+import type {ExecutionNode} from "../nodes/ExecutionNode.js";
 
 export function resolveValue<Sanitized>(
   value: unknown,
   parameter: Parameter,
   errorStore: ErrorStore,
-  ctx: ResolveContext<Sanitized>
+  ctx: ResolveContext<Sanitized>,
+  parentNode?: ExecutionNode
 ): ResolvedResult<Sanitized> {
   const raw = value
   let sanitized
@@ -28,6 +31,9 @@ export function resolveValue<Sanitized>(
           path: ctx.path,
           ctx
         })
+
+        collectNewNode<Sanitized>(COLLECT_AS_VALUE, parameter, ctx, parentNode, {raw, sanitized})
+
         return {raw, sanitized: sanitized as Value<Sanitized>}
       }).catch(error => {
         const err = error as Error
@@ -55,5 +61,7 @@ export function resolveValue<Sanitized>(
     throw err
   }
 
-  return {raw, sanitized: sanitized as Value<Sanitized>}
+  const resolved = {raw, sanitized: sanitized as Value<Sanitized>}
+  collectNewNode<Sanitized>(COLLECT_AS_VALUE, parameter, ctx, parentNode, resolved)
+  return resolved
 }

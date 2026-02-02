@@ -136,9 +136,9 @@ describe('ParameterReference', () => {
   })
 
   describe('meta property', () => {
-    test('should default to null', () => {
+    test('should default to undefined', () => {
       const param = new ParameterReference('field')
-      assert.strictEqual(param.meta, null)
+      assert.strictEqual(param.meta.raw, undefined)
     })
 
     test('should allow setting object meta', () => {

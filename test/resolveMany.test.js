@@ -170,9 +170,9 @@ describe('resolveMany', () => {
       const result = await resolveMany(['a', 'b', 'c'], param, errorStore, ctx)
 
       assert.strictEqual(result.raw.length, 3)
-      assert.strictEqual(result.raw[0].raw, 'a')
-      assert.strictEqual(result.raw[1].raw, 'b')
-      assert.strictEqual(result.raw[2].raw, 'c')
+      assert.strictEqual(result.raw[0], 'a')
+      assert.strictEqual(result.raw[1], 'b')
+      assert.strictEqual(result.raw[2], 'c')
     })
 
     test('should handle item validation errors', async () => {
@@ -209,9 +209,9 @@ describe('resolveMany', () => {
 
       const result = await resolveMany(['good', 'bad', 'good'], param, errorStore, ctx)
 
-      assert.strictEqual(result.raw[0].raw, 'good')
-      assert.strictEqual(result.raw[1].raw, INVALID)
-      assert.strictEqual(result.raw[2].raw, 'good')
+      assert.strictEqual(result.raw[0], 'good')
+      assert.strictEqual(result.raw[1], INVALID)
+      assert.strictEqual(result.raw[2], 'good')
     })
 
     test('should use correct path for each item', async () => {
@@ -266,10 +266,9 @@ describe('resolveMany', () => {
       const ctx = new ResolveContext('field', {global: new GlobalContext()})
 
       const result = await resolveMany([1, 0, 2, false, 3], param, errorStore, ctx)
-
       assert.strictEqual(result.raw.length, 5)
       assert.strictEqual(result.sanitized.length, 5)
-      assert.strictEqual(result.raw.filter(({raw}) => raw === INVALID).length, 2)
+      assert.strictEqual(result.raw.filter(raw => raw === INVALID).length, 2)
     })
   })
 

@@ -5,10 +5,15 @@ import {SearchStore} from "../search/SearchStore.js";
 import type {Parameter, ParameterAsync, ParameterRaw, ParameterSync, ParameterUnvalidated} from "./types.js";
 import {SchemaError} from "./SchemaError.js";
 import {SCHEMA_ERRORS} from "../errors/errors.js";
+import {NodeList} from "../nodes/NodeList.js";
 
-export type SchemaValidationResult = {
+export type SchemaValidationResultEntries = {
   errors: ErrorStore
   global: GlobalContext<unknown>
+}
+
+export type SchemaValidationResult = SchemaValidationResultEntries & {
+  nodes(parameter: Parameter): NodeList
 }
 
 export class Schema<AsyncGuarantee extends boolean> {
@@ -38,7 +43,8 @@ export class Schema<AsyncGuarantee extends boolean> {
     errors: ErrorStore,
     global: GlobalContext<unknown>,
     result: Record<string, unknown>
-  ): SchemaValidationResult | Promise<SchemaValidationResult> {
+  ): SchemaValidationResultEntries | Promise<SchemaValidationResultEntries> {
+
     for (let i = idx; i < this.#parameters.length; i++) {
       const param = this.#parameters[i]!
       param.freeze()
@@ -65,9 +71,10 @@ export class Schema<AsyncGuarantee extends boolean> {
     errors: ErrorStore,
     global: GlobalContext<unknown>,
     result: Record<string, unknown>
-  ): SchemaValidationResult | Promise<SchemaValidationResult> {
+  ): SchemaValidationResultEntries | Promise<SchemaValidationResultEntries> {
 
     const rules = global.rules
+
     for (let i = idx; i < rules.length; i++) {
       const {rule, ctx} = rules[i]!
       const maybePromise = rule(errors, result, ctx)
@@ -78,7 +85,11 @@ export class Schema<AsyncGuarantee extends boolean> {
         })
       }
     }
-    return {errors, global}
+
+    return {
+      errors,
+      global
+    }
   }
 
   validate(store: SearchStore | Record<string, unknown>): AsyncGuarantee extends true
@@ -93,7 +104,27 @@ export class Schema<AsyncGuarantee extends boolean> {
     const global = new GlobalContext<unknown>()
     const result: Record<string, unknown> = {}
 
-    return this.#walkParameters(store, 0, errors, global, result) as any
+    const entries = this.#walkParameters(store, 0, errors, global, result)
+
+    if (entries instanceof Promise) {
+      return entries.then((entries) => {
+        return {
+          global: entries.global,
+          errors: entries.errors,
+          nodes(parameter: Parameter) {
+            return global.nodes.get(parameter) ?? []
+          }
+        }
+      })
+    }
+
+    return {
+      global: entries.global,
+      errors: entries.errors,
+      nodes(parameter: Parameter) {
+        return new NodeList(global.nodes.get(parameter) ?? [])
+      }
+    } as any
   }
 }
 

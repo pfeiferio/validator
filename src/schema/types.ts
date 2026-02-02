@@ -6,6 +6,8 @@ import type {
   ValidationHandle
 } from "./ParameterReference.js";
 import type {MetaValue, SanitizedValue, Value} from "../resolver/utils.js";
+import type {ExecutionNode} from "../nodes/ExecutionNode.js";
+import type {RequiredIfCtx} from "./RequiredIfCtx.js";
 
 export interface ValidationIssue {
   path: string
@@ -46,11 +48,11 @@ export interface ParameterBase<T> {
 
   one(): this
 
-  requiredIf(predicate: (sanitizedValues: Record<string, unknown>) => boolean): this
+  requiredIf(predicate: (sanitizedValues: Record<string, unknown>, node: ExecutionNode, requiredIfCtx: RequiredIfCtx) => boolean): this
 
   validateShape(values: unknown[]): this
 
-  validate(value: unknown): SanitizedValue<T> | Promise<SanitizedValue<T>>  // TODO ABLEITUNG
+  validate(value: unknown): SanitizedValue<T> | Promise<SanitizedValue<T>>
 }
 
 export interface ParameterSync<T = unknown> extends ParameterBase<T> {

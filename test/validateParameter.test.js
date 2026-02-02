@@ -80,7 +80,7 @@ describe('validateParameter', () => {
       const store = new SearchStore({data: 'raw-value'})
       validateParameter(store, param)
 
-      assert.equal(param.meta, 'raw-value')
+      assert.equal(param.meta.raw, 'raw-value')
     })
 
     test('validateParameter - accepts custom error store', () => {
@@ -385,7 +385,7 @@ describe('validateParameter', () => {
 
       await validateParameter(store, param)
 
-      assert.strictEqual(param.meta, 'test')
+      assert.strictEqual(param.meta.raw, 'test')
     })
   })
 
@@ -397,7 +397,7 @@ describe('validateParameter', () => {
       await validateParameter(store, param)
 
       assert.strictEqual(param.value, 'test@example.com')
-      assert.strictEqual(param.meta, 'TEST@EXAMPLE.COM')
+      assert.strictEqual(param.meta.raw, 'TEST@EXAMPLE.COM')
     })
 
     test('should keep raw in meta and sanitized in value', async () => {
@@ -407,7 +407,7 @@ describe('validateParameter', () => {
       await validateParameter(store, param)
 
       assert.strictEqual(param.value, 42)
-      assert.strictEqual(param.meta, '42')
+      assert.strictEqual(param.meta.raw, '42')
     })
   })
 

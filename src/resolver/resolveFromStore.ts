@@ -9,12 +9,15 @@ import {createIssue} from "../schema/createIssue.js";
 import {SchemaError} from "../schema/SchemaError.js";
 import type {Parameter} from "../schema/types.js";
 import {SCHEMA_ERRORS} from "../errors/errors.js";
+import type {ExecutionNode} from "../nodes/ExecutionNode.js";
+import {COLLECT_AS_UNDEFINED, collectNewNode} from "../nodes/utils.js";
 
 export function resolveFromStore<Sanitized>(
   store: SearchStore,
   parameter: Parameter,
   errorStore: ErrorStore,
-  ctx: ResolveContext<Sanitized>
+  ctx: ResolveContext<Sanitized>,
+  parentNode?: ExecutionNode,
 ): ResolvedResult<Sanitized> {
   if (!parameter) {
     throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.MISSING(ctx))
@@ -42,11 +45,14 @@ export function resolveFromStore<Sanitized>(
   }
 
   if (!parameter.exists) {
-    return {
+    const resolved = {
       raw: undefined,
       sanitized: parameter.defaultValue as Sanitized,
     }
+
+    collectNewNode<Sanitized>(COLLECT_AS_UNDEFINED, parameter, ctx, parentNode, resolved)
+    return resolved
   }
 
-  return resolveLeaf(match.result, parameter, errorStore, ctx)
+  return resolveLeaf(match.result, parameter, errorStore, ctx, parentNode)
 }

@@ -1,8 +1,10 @@
 import {describe, test} from 'node:test'
 import assert from 'node:assert/strict'
 import {Schema} from "../dist/schema/Schema.js";
-import {ParameterReference, SearchStore} from "../dist/index.js";
+import {ParameterReference} from '../dist/schema/ParameterReference.js'
+import {SearchStore} from '../dist/search/SearchStore.js'
 import {checkNumber, checkString} from "@pfeiferio/check-primitives";
+
 describe('Schema test', () => {
 
   test('Schema - add() adds parameter to schema', () => {

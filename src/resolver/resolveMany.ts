@@ -5,12 +5,15 @@ import type {ResolveContext} from "../context/ResolveContext.js";
 import {createIssue} from "../schema/createIssue.js";
 import type {Parameter} from "../schema/types.js";
 import {assertArray} from "@pfeiferio/check-primitives";
+import type {ExecutionNode} from "../nodes/ExecutionNode.js";
+import {COLLECT_AS_ARRAY, collectNewNode} from "../nodes/utils.js";
 
 export function resolveMany<Sanitized>(
   values: unknown,
   parameter: Parameter,
   errorStore: ErrorStore,
-  ctx: ResolveContext<Sanitized>
+  ctx: ResolveContext<Sanitized>,
+  parentNode?: ExecutionNode
 ): ResolvedResult<Sanitized> {
   assertArray(values)
 
@@ -26,11 +29,14 @@ export function resolveMany<Sanitized>(
     }))
   }
 
-  return loop(parameter, errorStore, values, 0, ctx, rawResults, sanitizedResults)
+  const node = collectNewNode<Sanitized>(COLLECT_AS_ARRAY, parameter, ctx, parentNode)
+
+  return loop(node, parameter, errorStore, values, 0, ctx, rawResults, sanitizedResults)
 }
 
 
 function loop<Sanitized>(
+  parentNode: ExecutionNode,
   parameter: Parameter,
   errorStore: ErrorStore,
   values: Array<unknown>,
@@ -49,29 +55,33 @@ function loop<Sanitized>(
         values[i],
         parameter,
         errorStore,
-        itemCtx
+        itemCtx,
+        parentNode
       )
 
       if (resolved instanceof Promise) {
         return resolved.then((resolved) => {
           const {raw, sanitized} = resolved
+          //collectNewNode(COLLECT_AS_LEAF, parameter, ctx, node, resolved)
           rawResults.push(raw)
           sanitizedResults.push(sanitized)
-          return loop(parameter, errorStore, values, i + 1, ctx, rawResults, sanitizedResults)
+          return loop(parentNode, parameter, errorStore, values, i + 1, ctx, rawResults, sanitizedResults)
         }).catch(error => {
           const err = error as Error
           rawResults.push(INVALID)
           sanitizedResults.push(INVALID)
-          errorStore.processOnce(err)?.add(createIssue({
-            ctx, parameter, error
-          }))
-          return loop(parameter, errorStore, values, i + 1, ctx, rawResults, sanitizedResults)
+          errorStore.processOnce(err)?.add(
+            createIssue({
+              ctx, parameter, error
+            }))
+          return loop(parentNode, parameter, errorStore, values, i + 1, ctx, rawResults, sanitizedResults)
         })
       }
 
       const {raw, sanitized} = resolved
       rawResults.push(raw)
       sanitizedResults.push(sanitized)
+//      collectNewNode(COLLECT_AS_LEAF, parameter, ctx, node, resolved)
     } catch (error) {
       const err = error as Error
       rawResults.push(INVALID)
