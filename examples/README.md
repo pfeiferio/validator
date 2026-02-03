@@ -27,3 +27,18 @@ Features demonstrated:
 - direct access to validated values
 
 ➡️ [`express-query-validation.js`](../express-query-validation.js)
+
+### Request body and query validation
+
+This example demonstrates a more advanced Express integration
+covering both request body and query parameters.
+
+Features demonstrated:
+
+- unified validation of `req.body` and `req.query`
+- request extension via `parameterInitialize`
+- reusable parameter factories
+- structured error handling
+- direct access to validated values
+
+➡️ [`express-request-validation.ts`](./express-request-validation.ts)

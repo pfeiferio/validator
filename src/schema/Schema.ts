@@ -24,11 +24,10 @@ export class Schema<AsyncGuarantee extends boolean> {
   add<T>(value: ParameterAsync<T>): Schema<true>
   add<T>(value: ParameterSync<T>): Schema<AsyncGuarantee extends true ? true : false>
   add<T>(value: ParameterRaw<T>): Schema<AsyncGuarantee extends true ? true : false>
+  add<T>(value: Parameter<T>): Schema<AsyncGuarantee extends true ? true : false>
   add<T>(
-    value: ParameterUnvalidated<T>
-      | ParameterRaw<T>
-      | ParameterSync<T>
-      | ParameterAsync<T>): Schema<AsyncGuarantee extends true ? true : false> | Schema<boolean> {
+    value: Parameter<T>
+  ): Schema<AsyncGuarantee extends true ? true : false> | Schema<boolean> {
     this.#parameters.push(value)
     return this as any
   }
