@@ -38,12 +38,11 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "npm run clean && tsc",
+    "clean": "rm -rf dist",
     "test": "npm run build && node --test",
-    "test:coverage": "npm run build && node --test --experimental-test-coverage",
-    "test:watch": "node --test --watch",
-    "prepublishOnly": "npm run clean && npm test",
-    "clean": "rm -rf dist"
+    "test:coverage": "npm run build && node --test --experimental-test-coverage --test-coverage-exclude='test/**'",
+    "test:coverage:lcov": "npm run build && node --enable-source-maps --test --experimental-test-coverage --test-coverage-exclude='test/**' --test-reporter=lcov --test-reporter-destination=lcov.info"
   },
   "devDependencies": {
     "@types/node": "^20.17.9",

@@ -5,6 +5,7 @@
 ![license](https://img.shields.io/npm/l/@pfeiferio/validator)
 ![downloads](https://img.shields.io/npm/dm/@pfeiferio/validator)
 ![node](https://img.shields.io/node/v/@pfeiferio/validator)
+[![codecov](https://codecov.io/gh/pfeiferio/validator/branch/main/graph/badge.svg)](https://codecov.io/gh/pfeiferio/validator)
 
 A small, TypeScript-first validation framework for APIs and forms.
 
