@@ -13,6 +13,9 @@ import {RequiredIfCtx} from "./RequiredIfCtx.js";
 export type ValidationHandle<T> = (value: RawValue) => T
 export type AsyncValidationHandle<T> = (value: RawValue) => Promise<T>
 
+export type PostValidationHandle<T> = (value: T, sanitizedValues: Record<string, unknown>, nodes: Map<Parameter, ExecutionNode[]>) => void
+export type AsyncPostValidationHandle<T> = (value: T, sanitizedValues: Record<string, unknown>, nodes: Map<Parameter, ExecutionNode[]>) => Promise<void>
+
 export type ShapeValidationHandle = (value: unknown[]) => void
 export type ParameterMode = 'one' | 'many'
 
@@ -143,6 +146,31 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
     }
     this.#noValidate = true
     return this as ParameterRaw<T>
+  }
+
+  postValidation(fn: PostValidationHandle<T>): ParameterSync<T> {
+    this.#rules.push((errors, sanitizedValues, ctx) => {
+      if (errors.hasErrors()) return;
+      if (!this.exists) return
+      try {
+        fn(ctx.node.value as T, sanitizedValues, ctx.global.nodes)
+      } catch (error) {
+        errors.add(createIssue({ctx, parameter: this as any, error}))
+      }
+    })
+
+    return this as ParameterSync<T>
+  }
+
+  asyncPostValidation(fn: AsyncPostValidationHandle<T>): ParameterAsync<T> {
+    this.#rules.push((errors, sanitizedValues, ctx) => {
+      if (!this.exists) return
+      return fn(ctx.node.value as T, sanitizedValues, ctx.global.nodes).catch(error => {
+        errors.add(createIssue({ctx, parameter: this as any, error}))
+      })
+    })
+    this.#isAsync = true as AsyncGuarantee
+    return this as ParameterAsync<T>
   }
 
   requiredIf(predicate: (sanitizedValues: Record<string, unknown>, node: ExecutionNode, requiredIfCtx: RequiredIfCtx) => boolean): this {

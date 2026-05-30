@@ -49,7 +49,7 @@ export class Schema<AsyncGuarantee extends boolean> {
       param.freeze()
       const validation = validateParameter(store, param, errors, global)
 
-      assertValidationMatch(validation, param.isAsync, param.name)
+      assertValidationMatch(validation, param.useAsyncValidation, param.name)
 
       if (validation instanceof Promise) {
 

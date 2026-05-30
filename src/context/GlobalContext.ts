@@ -21,11 +21,13 @@ export class GlobalContext<Sanitized> {
 
   #rules: RuleWithContext[] = []
 
+  #executionScope: ExecutionScope = new ExecutionScope()
+
+  #nodes = new Map()
+
   get rules(): RuleWithContext[] {
     return this.#rules
   }
-
-  #nodes = new Map()
 
   registerNode(node: ExecutionNode, parameter: Parameter) {
     const nodes = this.#nodes.get(parameter) ?? []
@@ -33,8 +35,6 @@ export class GlobalContext<Sanitized> {
     this.#nodes.set(parameter, nodes)
     return node
   }
-
-  #executionScope: ExecutionScope = new ExecutionScope()
 
   get executionScope() {
     return this.#executionScope

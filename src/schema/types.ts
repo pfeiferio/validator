@@ -1,6 +1,8 @@
 import type {
+  AsyncPostValidationHandle,
   AsyncValidationHandle,
   ParameterMode,
+  PostValidationHandle,
   Rule,
   ShapeValidationHandle,
   ValidationHandle
@@ -20,6 +22,8 @@ export interface ParameterBase<T> {
   get name(): string
 
   get isAsync(): boolean
+
+  get useAsyncValidation(): boolean
 
   get isRequired(): boolean
 
@@ -62,6 +66,8 @@ export interface ParameterSync<T = unknown> extends ParameterBase<T> {
 
   validation(fn: ValidationHandle<T>): ParameterSync<T>
 
+  postValidation(fn: PostValidationHandle<T>): ParameterSync<T>
+
   validate(value: unknown): SanitizedValue<T>
 }
 
@@ -71,6 +77,8 @@ export interface ParameterAsync<T = unknown> extends ParameterBase<T> {
   get isNoValidate(): false
 
   asyncValidation(fn: AsyncValidationHandle<T>): ParameterAsync<T>
+
+  asyncPostValidation(fn: AsyncPostValidationHandle<T>): ParameterAsync<T>
 
   validate(value: unknown): SanitizedValue<T> | Promise<SanitizedValue<T>>
 }
@@ -87,6 +95,9 @@ export interface ParameterUnvalidated<T = unknown> extends ParameterBase<T> {
   validation(fn: ValidationHandle<T>): ParameterSync<T>
 
   asyncValidation(fn: AsyncValidationHandle<T>): ParameterAsync<T>
+
+  asyncPostValidation(fn: AsyncPostValidationHandle<T>): ParameterAsync<T>
+  postValidation(fn: PostValidationHandle<T>): ParameterSync<T>
 
   noValidation(): ParameterRaw<T>
 
