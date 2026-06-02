@@ -1,5 +1,5 @@
 import {resolveFromStore} from './resolveFromStore.js'
-import {INVALID, type ResolvedResult, type Value} from './utils.js'
+import {INVALID, type ResolvedResult, tryRun, type Value} from './utils.js'
 import {SearchStore} from '../search/SearchStore.js'
 import type {ErrorStore} from "../schema/ErrorStore.js";
 import type {ResolveContext} from "../context/ResolveContext.js";
@@ -8,7 +8,7 @@ import {SchemaError} from "../schema/SchemaError.js";
 import type {Parameter} from "../schema/types.js";
 import {assertObject} from "@pfeiferio/check-primitives";
 import {COLLECT_AS_OBJECT, collectNewNode} from "../nodes/utils.js";
-import type {ExecutionNode} from "../nodes/ExecutionNode.js";
+import {type ExecutionNode, overwriteSanitized} from "../nodes/ExecutionNode.js";
 
 export function resolveObject<Sanitized>(
   value: unknown,
@@ -56,45 +56,27 @@ function loop<Sanitized>(
 
     const itemCtx = ctx.child(propName)
 
-    try {
-      const resolved = resolveFromStore(
-        tmpStore,
-        propParameter,
-        errorStore,
-        itemCtx,
-        parentNode
-      )
-
-      if (resolved instanceof Promise) {
-        return resolved.then(resolved => {
-          const {raw, sanitized} = resolved
-          //collectNewNode(COLLECT_AS_LEAF, propParameter, ctx, parentNode, resolved)
-          sanitizedResults[propName] = sanitized
-          rawResults[propName] = raw
-          return loop(parentNode, parameter, errorStore, entries, i + 1, ctx, rawResults, sanitizedResults, tmpStore)
-        }).catch(error => {
-          const err = error as Error
-          errorStore.processOnce(err)?.add(createIssue({
-            ctx, parameter, error
-          }))
-          sanitizedResults[propName] = INVALID
-          rawResults[propName] = INVALID
-          return loop(parentNode, parameter, errorStore, entries, i + 1, ctx, rawResults, sanitizedResults, tmpStore)
-        })
-      }
-
+    const result = tryRun(() => resolveFromStore(
+      tmpStore,
+      propParameter,
+      errorStore,
+      itemCtx,
+      parentNode
+    ), (resolved) => {
       const {raw, sanitized} = resolved
       sanitizedResults[propName] = sanitized
       rawResults[propName] = raw
-      //collectNewNode(COLLECT_AS_LEAF, propParameter, ctx, parentNode, resolved)
-    } catch (error) {
+      itemCtx[overwriteSanitized] = (val) => sanitizedResults[propName] = val
+    }, (error) => {
       const err = error as Error
       errorStore.processOnce(err)?.add(createIssue({
         ctx, parameter, error
       }))
-      rawResults[propName] = INVALID
       sanitizedResults[propName] = INVALID
-    }
+      rawResults[propName] = INVALID
+    }, () => loop(parentNode, parameter, errorStore, entries, i + 1, ctx, rawResults, sanitizedResults, tmpStore))
+
+    if (result.isPromise) return result.promise as ResolvedResult<Sanitized>
   }
 
   return {raw: rawResults, sanitized: sanitizedResults as Value<Sanitized>}

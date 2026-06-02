@@ -34,8 +34,12 @@ export const SCHEMA_ERRORS = {
       `Parameter "${parameter.name}": Cannot set async validation after noValidation() was called.`,
     GUARD_FORCE_ASYNC: (parameter: ParameterUnvalidated) =>
       `"${parameter.name}": validationAsync() must return a Promise. Keep it consistent.`,
+    GUARD_FORCE_ASYNC_POST: (parameter: ParameterUnvalidated) =>
+      `"${parameter.name}": postValidationAsync() must return a Promise. Keep it consistent.`,
     WRONG_VALIDATION_USED: (parameter: ParameterUnvalidated) =>
       `"${parameter.name}": Sync validation returned a Promise. Use validationAsync() instead.`,
+    WRONG_POST_VALIDATION_USED: (parameter: ParameterUnvalidated) =>
+      `"${parameter.name}": Sync postValidation returned a Promise. Use postValidationAsync() instead.`,
     OBJECT_WITH_VALIDATION: (parameter: ParameterUnvalidated) =>
       `Parameter "${parameter.name}": Cannot set validation on object parameters. Object properties are validated independently.`,
     VALIDATION_WITH_OBJECT: (parameter: ParameterUnvalidated) =>

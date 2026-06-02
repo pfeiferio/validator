@@ -6,6 +6,9 @@ import type {Parameter, ParameterAsync, ParameterRaw, ParameterSync, ParameterUn
 import {SchemaError} from "./SchemaError.js";
 import {SCHEMA_ERRORS} from "../errors/errors.js";
 import {NodeList} from "../nodes/NodeList.js";
+import {overwriteSanitized} from "../nodes/ExecutionNode.js";
+import {createIssue} from "./createIssue.js";
+import {tryRun} from "../resolver/utils.js";
 
 export type SchemaValidationResultEntries = {
   errors: ErrorStore
@@ -52,7 +55,6 @@ export class Schema<AsyncGuarantee extends boolean> {
       assertValidationMatch(validation, param.useAsyncValidation, param.name)
 
       if (validation instanceof Promise) {
-
         return validation.then(() => {
           result[param.name] = param.value
           return this.#walkParameters(store, i + 1, errors, global, result)
@@ -91,17 +93,69 @@ export class Schema<AsyncGuarantee extends boolean> {
     }
   }
 
-  validate(store: SearchStore | Record<string, unknown>): AsyncGuarantee extends true
-    ? Promise<SchemaValidationResult>
-    : Promise<SchemaValidationResult> | SchemaValidationResult {
+  validate(store: SearchStore | Record<string, unknown>): Promise<SchemaValidationResult> | SchemaValidationResult {
+
+    const result: Record<string, unknown> = {}
+    const errorStore = new ErrorStore()
+    const validationResult = this.#validate(errorStore, store, result)
+
+    const walkPostParameters = (validationResult: SchemaValidationResult, idx: number = 0): Promise<SchemaValidationResult> | SchemaValidationResult => {
+
+      for (let i = idx; i < validationResult.global.postValidations.length; i++) {
+        const postValidation = validationResult.global.postValidations[i]!
+
+        if (!postValidation.parameter.hasPostValidation) continue
+
+        const thenFn = (postValidationResult: unknown) => {
+          postValidation.ctx[overwriteSanitized](postValidationResult)
+          if (!postValidation.ctx.forceOne) {
+            postValidation.parameter.value = postValidationResult as any
+          }
+          postValidation.value = postValidationResult
+        }
+
+        const catchFn = (error: unknown) => {
+          const err = error as Error
+          errorStore.processOnce(err)?.add(createIssue({
+            ctx: postValidation.ctx,
+            parameter: postValidation.parameter,
+            error
+          }))
+        }
+
+        const tryRunResult = tryRun(() => postValidation.parameter.postValidate(
+            postValidation.ctx.node.value,
+            result,
+            postValidation.ctx.node,
+            validationResult.global.nodes
+          ),
+          thenFn,
+          catchFn,
+          () => walkPostParameters(validationResult, i + 1)
+        )
+
+        if (tryRunResult.isPromise) return tryRunResult.promise as Promise<SchemaValidationResult>
+      }
+
+      return validationResult
+    }
+
+    if (validationResult instanceof Promise) {
+      return validationResult.then(validationResult => walkPostParameters(validationResult, 0))
+    }
+
+    return walkPostParameters(validationResult, 0)
+  }
+
+  #validate(
+    errors: ErrorStore,
+    store: SearchStore | Record<string, unknown>, result: Record<string, unknown>): Promise<SchemaValidationResult> | SchemaValidationResult {
 
     if (!(store instanceof SearchStore)) {
       store = new SearchStore(store)
     }
 
-    const errors = new ErrorStore()
     const global = new GlobalContext<unknown>()
-    const result: Record<string, unknown> = {}
 
     const entries = this.#walkParameters(store, 0, errors, global, result)
 
@@ -111,7 +165,7 @@ export class Schema<AsyncGuarantee extends boolean> {
           global: entries.global,
           errors: entries.errors,
           nodes(parameter: Parameter) {
-            return global.nodes.get(parameter) ?? []
+            return global.nodes.get(parameter) ?? new NodeList()
           }
         }
       })

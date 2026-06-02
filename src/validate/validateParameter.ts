@@ -5,6 +5,8 @@ import {ErrorStore} from '../schema/ErrorStore.js'
 import type {SearchStore} from '../search/SearchStore.js'
 import {createIssue} from "../schema/createIssue.js";
 import type {Parameter} from "../schema/types.js";
+import {overwriteSanitized} from "../nodes/ExecutionNode.js";
+import {tryRun} from "../resolver/utils.js";
 
 export interface ValidateParameterResult<Sanitized> {
   errors: ErrorStore
@@ -22,40 +24,28 @@ export function validateParameter<Sanitized>(
     global: globalContext ?? new GlobalContext()
   })
 
-  try {
-    const resolved = resolveFromStore(
+  const tryRunResult = tryRun(() => resolveFromStore(
       store,
       parameter,
       errorStore,
       ctx,
       undefined
-    )
+    ),
+    (resolved) => {
+      const {raw, sanitized} = resolved
+      parameter.meta.raw = raw as Record<string, unknown> | unknown[]
+      parameter.value = sanitized as Sanitized
+      ctx[overwriteSanitized] = (val) => parameter.value = val
+    },
+    (error) => {
+      const err = error as Error
+      errorStore.processOnce(err)?.add(createIssue({
+        ctx, parameter, error
+      }))
+    },
+    () => ({errors: errorStore, ctx})
+  )
 
-    if (resolved instanceof Promise) {
-      return resolved.then(resolved => {
-        const {raw, sanitized} = resolved
-        parameter.meta.raw = raw as Record<string, unknown> | unknown[]
-        parameter.value = sanitized as Sanitized
-        return {errors: errorStore, ctx}
-      }).catch(error => {
-        const err = error as Error
-        errorStore.processOnce(err)?.add(createIssue({
-          ctx, parameter, error
-        }))
-        return {errors: errorStore, ctx}
-      })
-    }
-
-    const {raw, sanitized} = resolved
-    parameter.meta.raw = raw as Record<string, unknown> | unknown[]
-    parameter.value = sanitized as Sanitized
-
-  } catch (error) {
-    const err = error as Error
-    errorStore.processOnce(err)?.add(createIssue({
-      ctx, parameter, error
-    }))
-  }
-
+  if (tryRunResult.isPromise) return tryRunResult.promise as Promise<ValidateParameterResult<Sanitized>>
   return {errors: errorStore, ctx}
 }

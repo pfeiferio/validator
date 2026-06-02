@@ -1,10 +1,11 @@
 import {GlobalContext, type PostValidation} from './GlobalContext.js'
 import type {Rule} from "../schema/ParameterReference.js";
 import {assertString} from "@pfeiferio/check-primitives";
-import {ExecutionNode} from "../nodes/ExecutionNode.js";
+import {ExecutionNode, overwriteSanitized} from "../nodes/ExecutionNode.js";
 import type {Parameter} from "../schema/types.js";
 import {SchemaError} from "../schema/SchemaError.js";
 import {SCHEMA_ERRORS} from "../errors/errors.js";
+import * as util from "node:util";
 
 export interface ResolveContextOptions<Sanitized> {
   global: GlobalContext<Sanitized>
@@ -92,5 +93,23 @@ export class ResolveContext<Sanitized> {
       global: this.#global,
       forceOne: true
     })
+  }
+
+  [overwriteSanitized](_val: unknown) {
+  }
+
+  [util.inspect.custom]() {
+    const name = this.#name
+    const paths = this.#paths
+    const forceOne = this.#forceOne
+    const node = this.#node
+    const sanitizedValueRef = this[overwriteSanitized]
+    return new class ResolveContext {
+      _name = name
+      _paths = paths
+      _forceOne = forceOne
+      _node = node
+      _sanitizedValueRef = sanitizedValueRef
+    }
   }
 }

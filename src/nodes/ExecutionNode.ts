@@ -7,6 +7,8 @@ import type {ResolveContext} from "../context/ResolveContext.js";
 import {SCHEMA_ERRORS} from "../errors/errors.js";
 import type {ExecutionScope} from "./ExecutionScope.js";
 
+export const overwriteSanitized = Symbol("overwriteSanitized");
+
 export class ExecutionNode {
 
   _parent?: ExecutionNode;
@@ -29,6 +31,11 @@ export class ExecutionNode {
   _parameter: Parameter
   _resolved?: ResolveResult<unknown>
 
+//  [overwriteSanitized](sanitized: unknown) {
+//    this._resolved ??= {raw: undefined, sanitized: undefined}
+//    this._resolved.sanitized = sanitized
+//  }
+//
   get value(): unknown {
 
     if (this._collectAs === COLLECT_AS_LEAF) {

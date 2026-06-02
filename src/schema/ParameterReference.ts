@@ -9,12 +9,13 @@ import {ValidationError} from "@pfeiferio/check-primitives";
 import {SCHEMA_ERRORS} from "../errors/errors.js";
 import type {ExecutionNode} from "../nodes/ExecutionNode.js";
 import {RequiredIfCtx} from "./RequiredIfCtx.js";
+import type {NodeList} from "../nodes/NodeList.js";
 
 export type ValidationHandle<T> = (value: RawValue) => T
 export type AsyncValidationHandle<T> = (value: RawValue) => Promise<T>
 
-export type PostValidationHandle<T> = (value: T, sanitizedValues: Record<string, unknown>, nodes: Map<Parameter, ExecutionNode[]>) => void
-export type AsyncPostValidationHandle<T> = (value: T, sanitizedValues: Record<string, unknown>, nodes: Map<Parameter, ExecutionNode[]>) => Promise<void>
+export type PostValidationHandle<T> = (value: T, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, ExecutionNode[] | NodeList>) => T
+export type AsyncPostValidationHandle<T> = (value: T, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, ExecutionNode[] | NodeList>) => Promise<T>
 
 export type ShapeValidationHandle = (value: unknown[]) => void
 export type ParameterMode = 'one' | 'many'
@@ -34,6 +35,10 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
 
   #validationHandle?: ValidationHandle<T>
   #asyncValidationHandle?: AsyncValidationHandle<T>
+
+  #postValidationHandle?: PostValidationHandle<T>
+  #asyncPostValidationHandle?: AsyncPostValidationHandle<T>
+
 
   #isAsync: AsyncGuarantee = false as AsyncGuarantee
   #meta: MetaValue = {
@@ -149,26 +154,19 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
   }
 
   postValidation(fn: PostValidationHandle<T>): ParameterSync<T> {
-    this.#rules.push((errors, sanitizedValues, ctx) => {
-      if (errors.hasErrors()) return;
-      if (!this.exists) return
-      try {
-        fn(ctx.node.value as T, sanitizedValues, ctx.global.nodes)
-      } catch (error) {
-        errors.add(createIssue({ctx, parameter: this as any, error}))
-      }
-    })
-
+    //
+    // if (this.isObject) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.OBJECT_WITH_VALIDATION(this))
+    if (this.#noValidate) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_SYNC_NO_VALIDATE(this));
+    // if (this.#asyncValidationHandle) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_SYNC_ASYNC());
+    this.#postValidationHandle = fn
     return this as ParameterSync<T>
   }
 
   asyncPostValidation(fn: AsyncPostValidationHandle<T>): ParameterAsync<T> {
-    this.#rules.push((errors, sanitizedValues, ctx) => {
-      if (!this.exists) return
-      return fn(ctx.node.value as T, sanitizedValues, ctx.global.nodes).catch(error => {
-        errors.add(createIssue({ctx, parameter: this as any, error}))
-      })
-    })
+    // if (this.isObject) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.OBJECT_WITH_VALIDATION(this))
+    if (this.#noValidate) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_ASYNC_NO_VALIDATE(this));
+    // if (this.#validationHandle) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_ASYNC_SYNC());
+    this.#asyncPostValidationHandle = fn
     this.#isAsync = true as AsyncGuarantee
     return this as ParameterAsync<T>
   }
@@ -301,6 +299,36 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
 
   get isNoValidate() {
     return this.#noValidate
+  }
+
+  get hasPostValidation() {
+    return !!(this.#postValidationHandle ?? this.#asyncPostValidationHandle)
+  }
+
+  postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, ExecutionNode[] | NodeList>): SanitizedValue<T> | Promise<SanitizedValue<T>> {
+
+
+    if (this.#noValidate) {
+      return value as SanitizedValue<T>
+    }
+
+    const handle = this.#postValidationHandle ?? this.#asyncPostValidationHandle
+
+    if (!handle) {
+      return value as SanitizedValue<T>
+    }
+
+    const validationResult = handle(value as T, sanitizedValues, node, nodes)
+    const resultIsPromise = validationResult instanceof Promise
+
+    if (this.#asyncPostValidationHandle) {
+      if (!resultIsPromise) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_FORCE_ASYNC_POST(this))
+      return validationResult as Promise<SanitizedValue<T>>
+    }
+
+    if (resultIsPromise) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.WRONG_POST_VALIDATION_USED(this))
+
+    return validationResult as SanitizedValue<T>
   }
 
   validate(value: unknown): SanitizedValue<T> | Promise<SanitizedValue<T>> {

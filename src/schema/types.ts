@@ -10,6 +10,7 @@ import type {
 import type {MetaValue, SanitizedValue, Value} from "../resolver/utils.js";
 import type {ExecutionNode} from "../nodes/ExecutionNode.js";
 import type {RequiredIfCtx} from "./RequiredIfCtx.js";
+import type {NodeList} from "../nodes/NodeList.js";
 
 export interface ValidationIssue {
   path: string
@@ -57,6 +58,10 @@ export interface ParameterBase<T> {
   validateShape(values: unknown[]): this
 
   validate(value: unknown): SanitizedValue<T> | Promise<SanitizedValue<T>>
+
+  postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, ExecutionNode[] | NodeList>): SanitizedValue<T> | Promise<SanitizedValue<T>>
+
+  get hasPostValidation(): boolean
 }
 
 export interface ParameterSync<T = unknown> extends ParameterBase<T> {
@@ -68,7 +73,11 @@ export interface ParameterSync<T = unknown> extends ParameterBase<T> {
 
   postValidation(fn: PostValidationHandle<T>): ParameterSync<T>
 
+  get hasPostValidation(): boolean
+
   validate(value: unknown): SanitizedValue<T>
+
+  postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, ExecutionNode[] | NodeList>): SanitizedValue<T> | Promise<SanitizedValue<T>>
 }
 
 export interface ParameterAsync<T = unknown> extends ParameterBase<T> {
@@ -81,6 +90,10 @@ export interface ParameterAsync<T = unknown> extends ParameterBase<T> {
   asyncPostValidation(fn: AsyncPostValidationHandle<T>): ParameterAsync<T>
 
   validate(value: unknown): SanitizedValue<T> | Promise<SanitizedValue<T>>
+
+  postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, NodeList>): SanitizedValue<T> | Promise<SanitizedValue<T>>
+
+  get hasPostValidation(): boolean
 }
 
 export interface ParameterRaw<T = unknown> extends ParameterBase<T> {
@@ -89,6 +102,10 @@ export interface ParameterRaw<T = unknown> extends ParameterBase<T> {
   get isNoValidate(): true
 
   validate(value: unknown): SanitizedValue<T>
+
+  postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, NodeList>): SanitizedValue<T> | Promise<SanitizedValue<T>>
+
+  get hasPostValidation(): boolean
 }
 
 export interface ParameterUnvalidated<T = unknown> extends ParameterBase<T> {
@@ -97,11 +114,14 @@ export interface ParameterUnvalidated<T = unknown> extends ParameterBase<T> {
   asyncValidation(fn: AsyncValidationHandle<T>): ParameterAsync<T>
 
   asyncPostValidation(fn: AsyncPostValidationHandle<T>): ParameterAsync<T>
+
   postValidation(fn: PostValidationHandle<T>): ParameterSync<T>
 
   noValidation(): ParameterRaw<T>
 
   validate(value: unknown): SanitizedValue<T> | Promise<SanitizedValue<T>>
+
+  postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, NodeList>): SanitizedValue<T> | Promise<SanitizedValue<T>>
 }
 
 export type Parameter<T = unknown> =

@@ -3,6 +3,7 @@ import type {ResolveContext} from './ResolveContext.js'
 import type {Parameter} from "../schema/types.js";
 import {ExecutionNode} from "../nodes/ExecutionNode.js";
 import {ExecutionScope} from "../nodes/ExecutionScope.js";
+import {NodeList} from "../nodes/NodeList.js";
 
 type RuleWithContext = {
   rule: Rule,
@@ -23,14 +24,14 @@ export class GlobalContext<Sanitized> {
 
   #executionScope: ExecutionScope = new ExecutionScope()
 
-  #nodes = new Map()
+  #nodes: Map<Parameter, NodeList> = new Map()
 
   get rules(): RuleWithContext[] {
     return this.#rules
   }
 
   registerNode(node: ExecutionNode, parameter: Parameter) {
-    const nodes = this.#nodes.get(parameter) ?? []
+    const nodes = this.#nodes.get(parameter) ?? new NodeList()
     nodes.push(node)
     this.#nodes.set(parameter, nodes)
     return node
