@@ -1,4 +1,4 @@
-import {test} from 'node:test'
+import {describe, test} from 'node:test'
 import assert from 'node:assert/strict'
 import {ParameterReference} from '../dist/schema/ParameterReference.js'
 import {Schema} from "../dist/schema/Schema.js";
@@ -33,4 +33,66 @@ test('weakset', () => {
 
   const result = schema.validate(store)
   assert.strictEqual(result.errors.hasErrors(), true)
+})
+
+describe('RequiredIfCtx', () => {
+
+  test('reason() appears in error context', () => {
+    const email = new ParameterReference('email', false).noValidation()
+    const notify = new ParameterReference('notify').noValidation()
+
+    email.requiredIf((values, node, ctx) => {
+      ctx.reason('notify is set to true')
+      return values.notify === true
+    })
+
+    const result = new Schema().add(notify).add(email).validate({notify: true})
+
+    assert.strictEqual(result.errors.hasErrors(), true)
+    assert.deepStrictEqual(result.errors.errors[0].context.reasons, ['notify is set to true'])
+  })
+
+  test('dependsOn() appears in error context', () => {
+    const email = new ParameterReference('email', false).noValidation()
+    const notify = new ParameterReference('notify').noValidation()
+
+    email.requiredIf((values, node, ctx) => {
+      ctx.dependsOn(node)
+      return values.notify === true
+    })
+
+    const result = new Schema().add(notify).add(email).validate({notify: true})
+
+    assert.strictEqual(result.errors.hasErrors(), true)
+    assert.deepStrictEqual(result.errors.errors[0].context.dependsOn, ['email'])
+  })
+
+  test('reason() and dependsOn() can be chained', () => {
+    const email = new ParameterReference('email', false).noValidation()
+    const notify = new ParameterReference('notify').noValidation()
+
+    email.requiredIf((values, node, ctx) => {
+      ctx.dependsOn(node).reason('first').reason('second')
+      return true
+    })
+
+    const result = new Schema().add(notify).add(email).validate({notify: true})
+
+    assert.deepStrictEqual(result.errors.errors[0].context.reasons, ['first', 'second'])
+    assert.strictEqual(result.errors.errors[0].context.dependsOn.length, 1)
+  })
+
+  test('async predicate in requiredIf throws SchemaError', () => {
+    const email = new ParameterReference('email', false).noValidation()
+    const notify = new ParameterReference('notify').noValidation()
+
+    email.requiredIf(async () => true)
+
+    const schema = new Schema().add(notify).add(email)
+
+    assert.throws(
+      () => schema.validate({notify: true}),
+      /Unexpected Promise/
+    )
+  })
 })

@@ -402,4 +402,58 @@ describe('ParameterReference', () => {
       })
     })
   })
+
+  describe('path getter', () => {
+    test('returns name before any resolution', () => {
+      const param = new ParameterReference('field')
+      assert.strictEqual(param.path, 'field')
+    })
+
+    test('returns stored path after setter', () => {
+      const param = new ParameterReference('field')
+      param.path = 'user.field'
+      assert.strictEqual(param.path, 'user.field')
+    })
+  })
+
+  describe('guards', () => {
+    test('noValidation() throws when validation is already set', () => {
+      assert.throws(
+        () => new ParameterReference('x').validation(v => v).noValidation(),
+        /\[schema-error\]/
+      )
+    })
+
+    test('object() throws when validation is already set', () => {
+      assert.throws(
+        () => new ParameterReference('x').validation(v => v).object({}),
+        /\[schema-error\]/
+      )
+    })
+
+    test('freeze() throws when no validation is set', () => {
+      const param = new ParameterReference('x')
+      assert.throws(() => param.freeze(), /\[schema-error\]/)
+    })
+
+    test('freeze() throws when required param has requiredIf rule', () => {
+      const param = new ParameterReference('x').noValidation()
+      param.requiredIf(() => true)
+      assert.throws(() => param.freeze(), /\[schema-error\]/)
+    })
+  })
+
+  describe('postValidate()', () => {
+    test('returns value unchanged when noValidation is set', () => {
+      const param = new ParameterReference('x').noValidation()
+      const result = param.postValidate('hello', {}, null, new Map())
+      assert.strictEqual(result, 'hello')
+    })
+
+    test('returns value unchanged when no postValidation handle is set', () => {
+      const param = new ParameterReference('x').validation(v => v)
+      const result = param.postValidate('hello', {}, null, new Map())
+      assert.strictEqual(result, 'hello')
+    })
+  })
 })

@@ -306,4 +306,40 @@ describe('Schema test', () => {
     assert.equal(Array.isArray(itemParam.value), true)
     assert.equal(itemParam.value.length, 3)
   })
+
+  test('Schema - nodes() works on async schema result', async () => {
+    const param = new ParameterReference('name').asyncValidation(async (v) => checkString(v))
+    const schema = new Schema()
+    schema.add(param)
+
+    const result = await schema.validate({name: 'Alice'})
+
+    const nodes = result.nodes(param)
+    assert.ok(nodes)
+    assert.equal(result.errors.hasErrors(), false)
+  })
+
+  test('Schema - nodes() returns empty NodeList for unknown parameter on async result', async () => {
+    const param = new ParameterReference('name').asyncValidation(async (v) => checkString(v))
+    const other = new ParameterReference('other').noValidation()
+    const schema = new Schema()
+    schema.add(param)
+
+    const result = await schema.validate({name: 'Alice'})
+
+    const nodes = result.nodes(other)
+    assert.ok(nodes)
+  })
+
+  test('Schema - throws when sync outer object has async nested property', () => {
+    const nested = new ParameterReference('name').asyncValidation(async (v) => checkString(v))
+    const user = new ParameterReference('user').object({name: nested})
+    const schema = new Schema()
+    schema.add(user)
+
+    assert.throws(
+      () => schema.validate({user: {name: 'Alice'}}),
+      /Parameter "user" is sync.*returned a Promise/
+    )
+  })
 })

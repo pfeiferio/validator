@@ -201,4 +201,18 @@ describe('SearchStore', () => {
       assert.strictEqual(store.get(''), 'value')
     })
   })
+
+  describe('constructor validation', () => {
+    test('throws SchemaError when passed a non-object', () => {
+      assert.throws(() => new SearchStore('not an object'), /\[schema-error\]/)
+    })
+
+    test('throws SchemaError when passed a number', () => {
+      assert.throws(() => new SearchStore(42), /\[schema-error\]/)
+    })
+
+    test('throws SchemaError when passed null', () => {
+      assert.throws(() => new SearchStore(null), /\[schema-error\]/)
+    })
+  })
 })

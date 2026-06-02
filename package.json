@@ -1,6 +1,6 @@
 {
   "name": "@pfeiferio/validator",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "TypeScript-first schema validation for APIs and forms with explicit parameters and async support",
   "license": "MIT",
   "author": "Pascal Pfeifer <pascal@pfeifer.zone>",
@@ -42,7 +42,8 @@
     "clean": "rm -rf dist",
     "test": "npm run build && node --test",
     "test:coverage": "npm run build && node --test --experimental-test-coverage --test-coverage-exclude='test/**'",
-    "test:coverage:lcov": "npm run build && node --enable-source-maps --test --experimental-test-coverage --test-coverage-exclude='test/**' --test-reporter=lcov --test-reporter-destination=lcov.info"
+    "test:coverage:c8": "npm run build && npx c8 node --test",
+    "test:coverage:lcov": "npm run build && npx c8 --src src node --enable-source-maps --test"
   },
   "devDependencies": {
     "@types/node": "^20.17.9",

@@ -305,3 +305,46 @@ describe('postValidation - data manipulation', () => {
     assert.equal(param.value, 'ALICE')
   })
 })
+
+describe('postValidation - guards', () => {
+
+  test('postValidation throws on noValidation() parameter', () => {
+    assert.throws(
+      () => new ParameterReference('name').noValidation().postValidation(() => {}),
+      /\[schema-error\]/
+    )
+  })
+
+  test('asyncPostValidation throws on noValidation() parameter', () => {
+    assert.throws(
+      () => new ParameterReference('name').noValidation().asyncPostValidation(async () => {}),
+      /\[schema-error\]/
+    )
+  })
+
+  test('asyncPostValidation handler returning sync throws SchemaError at runtime', () => {
+    const param = new ParameterReference('name').validation((v) => checkString(v))
+    param.asyncPostValidation(() => 'not a promise')
+
+    const schema = new Schema()
+    schema.add(param)
+
+    assert.throws(
+      () => schema.validate({name: 'alice'}),
+      /must return a Promise/
+    )
+  })
+
+  test('postValidation handler returning Promise throws SchemaError at runtime', () => {
+    const param = new ParameterReference('name').validation((v) => checkString(v))
+    param.postValidation(() => Promise.resolve('async from sync'))
+
+    const schema = new Schema()
+    schema.add(param)
+
+    assert.throws(
+      () => schema.validate({name: 'alice'}),
+      /postValidationAsync/
+    )
+  })
+})

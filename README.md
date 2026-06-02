@@ -93,6 +93,7 @@ Parameters:
 * can be synchronous or asynchronous
 * support arrays and nested objects
 * expose their sanitized value after validation
+* can register post-validation callbacks that run after all parameters are validated
 
 ```ts
 const email = createParameter('email')
@@ -235,6 +236,53 @@ console.log(result.errors.errors)
 
 ---
 
+### Post-validation
+
+Post-validation callbacks run after **all** parameters have been validated. They receive the sanitized value and can transform it by returning a new value.
+
+```ts
+const price = createParameter('price')
+  .validation(checkNumber)
+  .postValidation(value => Math.round(value * 100) / 100)
+```
+
+The callback receives `(value, sanitizedValues, node, nodes)`, giving access to all validated values and the execution tree:
+
+```ts
+const discount = createParameter('discount', false, 0).validation(checkNumber)
+
+const total = createParameter('total')
+  .validation(checkNumber)
+  .postValidation((value, sanitized) => {
+    return value * (1 - sanitized.discount)
+  })
+```
+
+For async post-validation:
+
+```ts
+const username = createParameter('username')
+  .validation(checkString)
+  .asyncPostValidation(async value => {
+    return await normalizeUsername(value)
+  })
+```
+
+`asyncPostValidation` causes `schema.validate()` to return a `Promise`, just like `asyncValidation`.
+
+Post-validation runs per item for arrays — each item can be transformed independently:
+
+```ts
+const tags = createParameter('tags')
+  .many()
+  .validation(checkString)
+  .asyncPostValidation(async value => value.toLowerCase().trim())
+```
+
+Post-validation does not run for missing optional parameters.
+
+---
+
 ### SearchStore (advanced)
 
 `SearchStore` is a thin abstraction over input data with helper methods like `get()` and `has()`.
@@ -314,6 +362,7 @@ import {
 * You need async validation (e.g. database checks)
 * You validate complex, nested request payloads
 * You want validation and transformation in one step
+* You need post-validation transformation based on the full validated context
 * You need access to the validation execution tree (for cross-field validation)
 
 ## When not to use it

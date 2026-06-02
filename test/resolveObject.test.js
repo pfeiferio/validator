@@ -839,3 +839,18 @@ describe('resolveObject', () => {
     assert.equal(result.sanitized.field3, 42)
   })
 })
+
+import {Schema} from '../dist/schema/Schema.js'
+
+describe('resolveObject - guard', () => {
+  test('throws SchemaError when a property is undefined in the properties map', () => {
+    const param = new ParameterReference('user').object({foo: undefined})
+    const schema = new Schema()
+    schema.add(param)
+
+    assert.throws(
+      () => schema.validate({user: {foo: 'bar'}}),
+      /missing properties/
+    )
+  })
+})
