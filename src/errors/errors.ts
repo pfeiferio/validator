@@ -26,12 +26,13 @@ export const SCHEMA_ERRORS = {
       `Invalid schema: parameter "${parameter.name}" is statically required and has requiredIf rules`,
     GUARD_ASYNC_SYNC: () => 'Cannot set async validation when sync is already set',
     GUARD_SYNC_ASYNC: () => 'Cannot set sync validation when async is already set',
+    GUARD_ASYNC_SYNC_POST: () => 'Cannot set async postValidation when sync is already set',
+    GUARD_SYNC_ASYNC_POST: () => 'Cannot set sync postValidation when async is already set',
+
     GUARD_NO_VALIDATE_VALIDATE: (parameter: ParameterUnvalidated) =>
       `Parameter "${parameter.name}": Cannot call noValidation() because a validation (sync or async) is already defined.`,
-    GUARD_SYNC_NO_VALIDATE: (parameter: ParameterUnvalidated) =>
-      `Parameter "${parameter.name}": Cannot set validation after noValidation() was called.`,
-    GUARD_ASYNC_NO_VALIDATE: (parameter: ParameterUnvalidated) =>
-      `Parameter "${parameter.name}": Cannot set async validation after noValidation() was called.`,
+    GUARD_NO_VALIDATE: (parameter: ParameterUnvalidated, isAsync: boolean, type: 'postValidation' | 'validation') =>
+      `Parameter "${parameter.name}": Cannot set ${isAsync ? 'async' : ''}${type} after noValidation() was called.`,
     GUARD_FORCE_ASYNC: (parameter: ParameterUnvalidated) =>
       `"${parameter.name}": validationAsync() must return a Promise. Keep it consistent.`,
     GUARD_FORCE_ASYNC_POST: (parameter: ParameterUnvalidated) =>
@@ -42,6 +43,8 @@ export const SCHEMA_ERRORS = {
       `"${parameter.name}": Sync postValidation returned a Promise. Use postValidationAsync() instead.`,
     OBJECT_WITH_VALIDATION: (parameter: ParameterUnvalidated) =>
       `Parameter "${parameter.name}": Cannot set validation on object parameters. Object properties are validated independently.`,
+    OBJECT_WITH_POST_VALIDATION: (parameter: ParameterUnvalidated) =>
+      `Parameter "${parameter.name}": Cannot set postValidation on object parameters. Object properties are validated independently.`,
     VALIDATION_WITH_OBJECT: (parameter: ParameterUnvalidated) =>
       `Parameter "${parameter.name}": Cannot set object() on parameters with a validation. Remove the validation and validate object properties instead.`
   }

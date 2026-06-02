@@ -73,6 +73,8 @@ export interface ParameterSync<T = unknown> extends ParameterBase<T> {
 
   postValidation(fn: PostValidationHandle<T>): ParameterSync<T>
 
+  asyncPostValidation(fn: AsyncPostValidationHandle<T>): ParameterAsync<T>
+
   get hasPostValidation(): boolean
 
   validate(value: unknown): SanitizedValue<T>
@@ -88,6 +90,8 @@ export interface ParameterAsync<T = unknown> extends ParameterBase<T> {
   asyncValidation(fn: AsyncValidationHandle<T>): ParameterAsync<T>
 
   asyncPostValidation(fn: AsyncPostValidationHandle<T>): ParameterAsync<T>
+
+  postValidation(fn: AsyncPostValidationHandle<T>): ParameterAsync<T>
 
   validate(value: unknown): SanitizedValue<T> | Promise<SanitizedValue<T>>
 
@@ -115,7 +119,7 @@ export interface ParameterUnvalidated<T = unknown> extends ParameterBase<T> {
 
   asyncPostValidation(fn: AsyncPostValidationHandle<T>): ParameterAsync<T>
 
-  postValidation(fn: PostValidationHandle<T>): ParameterSync<T>
+  postValidation(fn: PostValidationHandle<T>): ParameterSync<T> | ParameterAsync<T>
 
   noValidation(): ParameterRaw<T>
 

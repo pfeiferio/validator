@@ -153,19 +153,20 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
     return this as ParameterRaw<T>
   }
 
-  postValidation(fn: PostValidationHandle<T>): ParameterSync<T> {
-    //
-    // if (this.isObject) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.OBJECT_WITH_VALIDATION(this))
-    if (this.#noValidate) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_SYNC_NO_VALIDATE(this));
-    // if (this.#asyncValidationHandle) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_SYNC_ASYNC());
+  postValidation<A extends boolean = AsyncGuarantee>(
+    fn: PostValidationHandle<T>
+  ): A extends true ? ParameterAsync<T> : ParameterSync<T> {
+    if (this.isObject) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.OBJECT_WITH_POST_VALIDATION(this))
+    if (this.#noValidate) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_NO_VALIDATE(this, false, 'postValidation'));
+    if (this.#asyncPostValidationHandle) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_SYNC_ASYNC_POST());
     this.#postValidationHandle = fn
-    return this as ParameterSync<T>
+    return this as any
   }
 
   asyncPostValidation(fn: AsyncPostValidationHandle<T>): ParameterAsync<T> {
-    // if (this.isObject) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.OBJECT_WITH_VALIDATION(this))
-    if (this.#noValidate) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_ASYNC_NO_VALIDATE(this));
-    // if (this.#validationHandle) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_ASYNC_SYNC());
+    if (this.isObject) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.OBJECT_WITH_POST_VALIDATION(this))
+    if (this.#noValidate) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_NO_VALIDATE(this, true, 'postValidation'));
+    if (this.#postValidationHandle) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_ASYNC_SYNC_POST());
     this.#asyncPostValidationHandle = fn
     this.#isAsync = true as AsyncGuarantee
     return this as ParameterAsync<T>
@@ -273,7 +274,7 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
 
   validation(fn: ValidationHandle<T>): ParameterSync<T> {
     if (this.isObject) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.OBJECT_WITH_VALIDATION(this))
-    if (this.#noValidate) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_SYNC_NO_VALIDATE(this));
+    if (this.#noValidate) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_NO_VALIDATE(this, false, 'validation'));
     if (this.#asyncValidationHandle) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_SYNC_ASYNC());
     this.#validationHandle = fn
     return this as ParameterSync<T>
@@ -281,7 +282,7 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
 
   asyncValidation(fn: AsyncValidationHandle<T>): ParameterAsync<T> {
     if (this.isObject) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.OBJECT_WITH_VALIDATION(this))
-    if (this.#noValidate) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_ASYNC_NO_VALIDATE(this));
+    if (this.#noValidate) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_NO_VALIDATE(this, true, 'validation'));
     if (this.#validationHandle) throw new SchemaError(SCHEMA_ERRORS.PARAMETER_REFERENCE.GUARD_ASYNC_SYNC());
     this.#asyncValidationHandle = fn
     this.#isAsync = true as AsyncGuarantee
