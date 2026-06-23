@@ -54,7 +54,7 @@ function loop<Sanitized>(
 
     propParameter.freeze()
 
-    const itemCtx = ctx.child(propName)
+    const itemCtx = ctx.childFor(propName, propParameter)
 
     const result = tryRun(() => resolveFromStore(
       tmpStore,

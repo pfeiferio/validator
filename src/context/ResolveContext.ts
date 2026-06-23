@@ -1,8 +1,8 @@
 import {GlobalContext, type PostValidation} from './GlobalContext.js'
 import type {Rule, ValidationContext} from "../schema/ParameterReference.js";
+import type {Parameter} from "../schema/types.js";
 import {assertString} from "@pfeiferio/check-primitives";
 import {ExecutionNode, overwriteSanitized} from "../nodes/ExecutionNode.js";
-import type {Parameter} from "../schema/types.js";
 import {SchemaError} from "../schema/SchemaError.js";
 import {SCHEMA_ERRORS} from "../errors/errors.js";
 import * as util from "node:util";
@@ -92,6 +92,19 @@ export class ResolveContext<Sanitized> {
     return new ResolveContext([...this.#paths, path], {
       global: this.#global,
       validationContext: this.#validationContext,
+      forceOne: false
+    })
+  }
+
+  childFor(path: string, parameter: Parameter): ResolveContext<Sanitized> {
+    const ownLocal = this.#global.paramContexts?.get(parameter)
+    const validationContext: ValidationContext = {
+      global: this.#validationContext?.global,
+      local: ownLocal ?? this.#validationContext?.local,
+    }
+    return new ResolveContext([...this.#paths, path], {
+      global: this.#global,
+      validationContext,
       forceOne: false
     })
   }

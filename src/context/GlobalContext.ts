@@ -26,6 +26,12 @@ export class GlobalContext<Sanitized> {
 
   #nodes: Map<Parameter, NodeList> = new Map()
 
+  readonly paramContexts: Map<Parameter, Record<string, unknown>> | undefined
+
+  constructor(paramContexts?: Map<Parameter, Record<string, unknown>>) {
+    this.paramContexts = paramContexts
+  }
+
   get rules(): RuleWithContext[] {
     return this.#rules
   }

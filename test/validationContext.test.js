@@ -182,4 +182,117 @@ describe('validationContext', () => {
 
   })
 
+  describe('nested parameters', () => {
+
+    test('global context propagates to properties inside .object()', () => {
+      const receivedCtxValues = []
+      const city = new ParameterReference('city').validation((v, ctx) => {
+        receivedCtxValues.push(ctx?.global?.locale)
+        return checkString(v)
+      })
+      const address = new ParameterReference('address').object({city})
+
+      const schema = new Schema()
+      schema.add(address)
+      schema.validate({address: {city: 'Berlin'}}, {locale: 'de'})
+
+      assert.deepEqual(receivedCtxValues, ['de'])
+    })
+
+    test('global context propagates to each item in a .many() array via schema', () => {
+      const receivedCtxValues = []
+      const tag = new ParameterReference('tags').many().validation((v, ctx) => {
+        receivedCtxValues.push(ctx?.global?.scope)
+        return checkString(v)
+      })
+
+      const schema = new Schema()
+      schema.add(tag)
+      schema.validate({tags: ['a', 'b', 'c']}, {scope: 'shared'})
+
+      assert.deepEqual(receivedCtxValues, ['shared', 'shared', 'shared'])
+    })
+
+    test('global context propagates through object-in-object', () => {
+      const receivedCtxValues = []
+      const street = new ParameterReference('street').validation((v, ctx) => {
+        receivedCtxValues.push(ctx?.global?.locale)
+        return checkString(v)
+      })
+      const address = new ParameterReference('address').object({street})
+      const user = new ParameterReference('user').object({address})
+
+      const schema = new Schema()
+      schema.add(user)
+      schema.validate({user: {address: {street: 'Hauptstraße'}}}, {locale: 'de'})
+
+      assert.deepEqual(receivedCtxValues, ['de'])
+    })
+
+    test('global context propagates to properties inside array of objects', () => {
+      const receivedCtxValues = []
+      const name = new ParameterReference('name').validation((v, ctx) => {
+        receivedCtxValues.push(ctx?.global?.locale)
+        return checkString(v)
+      })
+      const item = new ParameterReference('items').many().object({name})
+
+      const schema = new Schema()
+      schema.add(item)
+      schema.validate({items: [{name: 'foo'}, {name: 'bar'}]}, {locale: 'de'})
+
+      assert.deepEqual(receivedCtxValues, ['de', 'de'])
+    })
+
+    test('local context on parent parameter is inherited by nested properties without own local', () => {
+      const receivedCtxValues = []
+      const city = new ParameterReference('city').validation((v, ctx) => {
+        receivedCtxValues.push(ctx?.local?.region)
+        return checkString(v)
+      })
+      const address = new ParameterReference('address').object({city})
+
+      const schema = new Schema()
+      schema.addParameterValidationContext(address, {region: 'EU'})
+      schema.add(address)
+      schema.validate({address: {city: 'Berlin'}})
+
+      assert.deepEqual(receivedCtxValues, ['EU'])
+    })
+
+    test('nested parameter can have its own local context', () => {
+      const receivedCtxValues = []
+      const city = new ParameterReference('city').validation((v, ctx) => {
+        receivedCtxValues.push(ctx?.local?.allowed)
+        return checkString(v)
+      })
+      const address = new ParameterReference('address').object({city})
+
+      const schema = new Schema()
+      schema.addParameterValidationContext(city, {allowed: ['Berlin', 'Hamburg']})
+      schema.add(address)
+      schema.validate({address: {city: 'Berlin'}})
+
+      assert.deepEqual(receivedCtxValues, [['Berlin', 'Hamburg']])
+    })
+
+    test("nested parameter's own local overrides parent's local", () => {
+      const receivedCtxValues = []
+      const city = new ParameterReference('city').validation((v, ctx) => {
+        receivedCtxValues.push(ctx?.local)
+        return checkString(v)
+      })
+      const address = new ParameterReference('address').object({city})
+
+      const schema = new Schema()
+      schema.addParameterValidationContext(address, {region: 'EU'})
+      schema.addParameterValidationContext(city, {allowed: ['Berlin']})
+      schema.add(address)
+      schema.validate({address: {city: 'Berlin'}})
+
+      assert.deepEqual(receivedCtxValues, [{allowed: ['Berlin']}])
+    })
+
+  })
+
 })

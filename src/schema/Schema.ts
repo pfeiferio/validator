@@ -175,7 +175,7 @@ export class Schema<AsyncGuarantee extends boolean> {
       store = new SearchStore(store)
     }
 
-    const global = new GlobalContext<unknown>()
+    const global = new GlobalContext<unknown>(this.#paramContexts)
 
     const entries = this.#walkParameters(store, 0, errors, global, result, globalCtx)
 
