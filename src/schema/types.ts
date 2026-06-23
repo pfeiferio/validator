@@ -57,7 +57,7 @@ export interface ParameterBase<T> {
 
   validateShape(values: unknown[]): this
 
-  validate(value: unknown): SanitizedValue<T> | Promise<SanitizedValue<T>>
+  validate(value: unknown, validationContext?: Record<string, unknown> | undefined): SanitizedValue<T> | Promise<SanitizedValue<T>>
 
   postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, ExecutionNode[] | NodeList>): SanitizedValue<T> | Promise<SanitizedValue<T>>
 
@@ -77,7 +77,7 @@ export interface ParameterSync<T = unknown> extends ParameterBase<T> {
 
   get hasPostValidation(): boolean
 
-  validate(value: unknown): SanitizedValue<T>
+  validate(value: unknown, validationContext?: Record<string, unknown> | undefined): SanitizedValue<T>
 
   postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, ExecutionNode[] | NodeList>): SanitizedValue<T> | Promise<SanitizedValue<T>>
 }
@@ -93,7 +93,7 @@ export interface ParameterAsync<T = unknown> extends ParameterBase<T> {
 
   postValidation(fn: AsyncPostValidationHandle<T>): ParameterAsync<T>
 
-  validate(value: unknown): SanitizedValue<T> | Promise<SanitizedValue<T>>
+  validate(value: unknown, validationContext?: Record<string, unknown> | undefined): SanitizedValue<T> | Promise<SanitizedValue<T>>
 
   postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, NodeList>): SanitizedValue<T> | Promise<SanitizedValue<T>>
 
@@ -105,7 +105,7 @@ export interface ParameterRaw<T = unknown> extends ParameterBase<T> {
 
   get isNoValidate(): true
 
-  validate(value: unknown): SanitizedValue<T>
+  validate(value: unknown, validationContext?: Record<string, unknown> | undefined): SanitizedValue<T>
 
   postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, NodeList>): SanitizedValue<T> | Promise<SanitizedValue<T>>
 
@@ -123,7 +123,7 @@ export interface ParameterUnvalidated<T = unknown> extends ParameterBase<T> {
 
   noValidation(): ParameterRaw<T>
 
-  validate(value: unknown): SanitizedValue<T> | Promise<SanitizedValue<T>>
+  validate(value: unknown, validationContext?: Record<string, unknown> | undefined): SanitizedValue<T> | Promise<SanitizedValue<T>>
 
   postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, NodeList>): SanitizedValue<T> | Promise<SanitizedValue<T>>
 }

@@ -10,6 +10,7 @@ import * as util from "node:util";
 export interface ResolveContextOptions<Sanitized> {
   global: GlobalContext<Sanitized>
   forceOne?: boolean
+  validationContext?: Record<string, unknown> | undefined
   name?: string
 }
 
@@ -20,9 +21,11 @@ export class ResolveContext<Sanitized> {
   readonly #name: string
   #node?: ExecutionNode
 
+  readonly #validationContext: Record<string, unknown> | undefined
+
   constructor(
     path: string | string[],
-    {global, forceOne = false, name}: ResolveContextOptions<Sanitized>
+    {global, forceOne = false, name, validationContext}: ResolveContextOptions<Sanitized>
   ) {
 
     if (!Array.isArray(path)) {
@@ -38,6 +41,11 @@ export class ResolveContext<Sanitized> {
     this.#paths = path
     this.#name = name
     this.#global = global
+    this.#validationContext = validationContext
+  }
+
+  get validationContext(): Record<string, unknown> | undefined {
+    return this.#validationContext
   }
 
   get name(): string {
@@ -83,6 +91,7 @@ export class ResolveContext<Sanitized> {
   child(path: string): ResolveContext<Sanitized> {
     return new ResolveContext([...this.#paths, path], {
       global: this.#global,
+      validationContext: this.#validationContext,
       forceOne: false
     })
   }
@@ -91,6 +100,7 @@ export class ResolveContext<Sanitized> {
     return new ResolveContext([...this.#paths, path], {
       name: path,
       global: this.#global,
+      validationContext: this.#validationContext,
       forceOne: true
     })
   }

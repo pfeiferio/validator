@@ -283,6 +283,48 @@ Post-validation does not run for missing optional parameters.
 
 ---
 
+### Validation Context
+
+You can pass an optional context object to `schema.validate()` that is forwarded to every validation handler as the second argument. This is useful for request-scoped data like the current user, tenant, or permissions that should influence validation without polluting the schema definition.
+
+```ts
+const role = createParameter('role')
+  .validation((value, ctx) => {
+    const str = checkString(value)
+    if (!ctx?.allowedRoles.includes(str)) {
+      throw new Error(`role "${str}" not allowed`)
+    }
+    return str
+  })
+
+const schema = new Schema().add(role)
+
+schema.validate(req.body, {allowedRoles: currentUser.roles})
+```
+
+The context is passed to all parameters in the schema, including nested ones:
+
+```ts
+const tag = createParameter('tag')
+  .validation((value, ctx) => {
+    const str = checkString(value)
+    if (ctx?.locale === 'de') return str.toLowerCase()
+    return str
+  })
+
+const item = createParameter('item').object({tag}).many()
+
+schema.validate(data, {locale: req.headers['accept-language']})
+```
+
+The same API is available when calling `validateParameter` directly:
+
+```ts
+validateParameter(store, param, null, null, {tenant: 'acme'})
+```
+
+---
+
 ### SearchStore (advanced)
 
 `SearchStore` is a thin abstraction over input data with helper methods like `get()` and `has()`.
