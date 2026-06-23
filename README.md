@@ -285,13 +285,22 @@ Post-validation does not run for missing optional parameters.
 
 ### Validation Context
 
-You can pass an optional context object to `schema.validate()` that is forwarded to every validation handler as the second argument. This is useful for request-scoped data like the current user, tenant, or permissions that should influence validation without polluting the schema definition.
+Every validation handler receives a `ValidationContext` as its second argument:
+
+```ts
+type ValidationContext = {
+  global: Record<string, unknown> | undefined  // passed at schema.validate() call time
+  local:  Record<string, unknown> | undefined  // bound to the parameter at definition time
+}
+```
+
+**Global context** — pass request-scoped data (current user, tenant, permissions) at call time without coupling it to the schema definition:
 
 ```ts
 const role = createParameter('role')
   .validation((value, ctx) => {
     const str = checkString(value)
-    if (!ctx?.allowedRoles.includes(str)) {
+    if (!ctx.global?.allowedRoles.includes(str)) {
       throw new Error(`role "${str}" not allowed`)
     }
     return str
@@ -302,26 +311,25 @@ const schema = new Schema().add(role)
 schema.validate(req.body, {allowedRoles: currentUser.roles})
 ```
 
-The context is passed to all parameters in the schema, including nested ones:
+**Local context** — bind static configuration directly to a parameter via `schema.addParameterValidationContext()`. Only that parameter receives it in `ctx.local`:
 
 ```ts
 const tag = createParameter('tag')
   .validation((value, ctx) => {
     const str = checkString(value)
-    if (ctx?.locale === 'de') return str.toLowerCase()
+    const allowed = ctx.local?.allowed as string[]
+    if (!allowed.includes(str)) throw new Error(`unknown tag "${str}"`)
     return str
   })
 
-const item = createParameter('item').object({tag}).many()
-
-schema.validate(data, {locale: req.headers['accept-language']})
+const schema = new Schema()
+schema.addParameterValidationContext(tag, {allowed: ['news', 'tech', 'sport']})
+schema.add(tag)
 ```
 
-The same API is available when calling `validateParameter` directly:
+Both levels are always present on `ctx` when validating through a schema — fields are `undefined` when not set. Global and local context are independent and do not merge.
 
-```ts
-validateParameter(store, param, null, null, {tenant: 'acme'})
-```
+The context is forwarded to all parameters including nested ones, and also to `postValidation` handlers.
 
 ---
 

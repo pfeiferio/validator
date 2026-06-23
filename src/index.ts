@@ -24,6 +24,9 @@ export {createParameter} from './schema/createParameter.js'
 export type {
   ValidationHandle,
   AsyncValidationHandle,
+  PostValidationHandle,
+  AsyncPostValidationHandle,
+  ValidationContext,
   ShapeValidationHandle,
   ParameterMode,
   Rule

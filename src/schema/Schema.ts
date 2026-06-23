@@ -9,6 +9,7 @@ import {NodeList} from "../nodes/NodeList.js";
 import {overwriteSanitized} from "../nodes/ExecutionNode.js";
 import {createIssue} from "./createIssue.js";
 import {tryRun} from "../resolver/utils.js";
+import type {ValidationContext} from "./ParameterReference.js";
 
 export type SchemaValidationResultEntries = {
   errors: ErrorStore
@@ -22,6 +23,7 @@ export type SchemaValidationResult = SchemaValidationResultEntries & {
 export class Schema<AsyncGuarantee extends boolean> {
 
   #parameters: Parameter[] = [];
+  #paramContexts = new Map<Parameter, Record<string, unknown>>()
 
   add<T>(value: ParameterUnvalidated<T>): Schema<AsyncGuarantee extends true ? true : false>
   add<T>(value: ParameterAsync<T>): Schema<true>
@@ -35,8 +37,17 @@ export class Schema<AsyncGuarantee extends boolean> {
     return this as any
   }
 
+  addParameterValidationContext(parameter: Parameter, ctx: Record<string, unknown>): this {
+    this.#paramContexts.set(parameter, ctx)
+    return this
+  }
+
   get parameters(): Parameter[] {
     return this.#parameters as any
+  }
+
+  #buildValidationContext(param: Parameter, globalCtx: Record<string, unknown> | undefined): ValidationContext {
+    return {global: globalCtx, local: this.#paramContexts.get(param)}
   }
 
   #walkParameters(
@@ -45,12 +56,13 @@ export class Schema<AsyncGuarantee extends boolean> {
     errors: ErrorStore,
     global: GlobalContext<unknown>,
     result: Record<string, unknown>,
-    validationContext: Record<string, unknown> | undefined,
+    globalCtx: Record<string, unknown> | undefined,
   ): SchemaValidationResultEntries | Promise<SchemaValidationResultEntries> {
 
     for (let i = idx; i < this.#parameters.length; i++) {
       const param = this.#parameters[i]!
       param.freeze()
+      const validationContext = this.#buildValidationContext(param, globalCtx)
       const validation = validateParameter(store, param, errors, global, validationContext)
 
       assertValidationMatch(validation, param.useAsyncValidation, param.name)
@@ -58,7 +70,7 @@ export class Schema<AsyncGuarantee extends boolean> {
       if (validation instanceof Promise) {
         return validation.then(() => {
           result[param.name] = param.value
-          return this.#walkParameters(store, i + 1, errors, global, result, validationContext)
+          return this.#walkParameters(store, i + 1, errors, global, result, globalCtx)
         })
       }
 
@@ -94,14 +106,13 @@ export class Schema<AsyncGuarantee extends boolean> {
     }
   }
 
-  validate(store: SearchStore | Record<string, unknown>, validationContext?: Record<string, unknown> | undefined): Promise<SchemaValidationResult> | SchemaValidationResult {
+  validate(store: SearchStore | Record<string, unknown>, globalCtx?: Record<string, unknown> | undefined): Promise<SchemaValidationResult> | SchemaValidationResult {
 
     const result: Record<string, unknown> = {}
     const errorStore = new ErrorStore()
-    const validationResult = this.#validate(errorStore, store, result, validationContext)
+    const validationResult = this.#validate(errorStore, store, result, globalCtx)
 
     const walkPostParameters = (validationResult: SchemaValidationResult, idx: number = 0): Promise<SchemaValidationResult> | SchemaValidationResult => {
-
       for (let i = idx; i < validationResult.global.postValidations.length; i++) {
         const postValidation = validationResult.global.postValidations[i]!
 
@@ -128,7 +139,8 @@ export class Schema<AsyncGuarantee extends boolean> {
             postValidation.ctx.node.value,
             result,
             postValidation.ctx.node,
-            validationResult.global.nodes
+            validationResult.global.nodes,
+            postValidation.ctx.validationContext
           ),
           thenFn,
           catchFn,
@@ -156,7 +168,7 @@ export class Schema<AsyncGuarantee extends boolean> {
     errors: ErrorStore,
     store: SearchStore | Record<string, unknown>,
     result: Record<string, unknown>,
-    validationContext: Record<string, unknown> | undefined,
+    globalCtx: Record<string, unknown> | undefined,
   ): Promise<SchemaValidationResult> | SchemaValidationResult {
 
     if (!(store instanceof SearchStore)) {
@@ -165,7 +177,7 @@ export class Schema<AsyncGuarantee extends boolean> {
 
     const global = new GlobalContext<unknown>()
 
-    const entries = this.#walkParameters(store, 0, errors, global, result, validationContext)
+    const entries = this.#walkParameters(store, 0, errors, global, result, globalCtx)
 
     if (entries instanceof Promise) {
       return entries.then((entries) => {

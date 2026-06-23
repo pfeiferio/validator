@@ -1,5 +1,5 @@
 import {GlobalContext, type PostValidation} from './GlobalContext.js'
-import type {Rule} from "../schema/ParameterReference.js";
+import type {Rule, ValidationContext} from "../schema/ParameterReference.js";
 import {assertString} from "@pfeiferio/check-primitives";
 import {ExecutionNode, overwriteSanitized} from "../nodes/ExecutionNode.js";
 import type {Parameter} from "../schema/types.js";
@@ -10,7 +10,7 @@ import * as util from "node:util";
 export interface ResolveContextOptions<Sanitized> {
   global: GlobalContext<Sanitized>
   forceOne?: boolean
-  validationContext?: Record<string, unknown> | undefined
+  validationContext?: ValidationContext | undefined
   name?: string
 }
 
@@ -21,7 +21,7 @@ export class ResolveContext<Sanitized> {
   readonly #name: string
   #node?: ExecutionNode
 
-  readonly #validationContext: Record<string, unknown> | undefined
+  readonly #validationContext: ValidationContext | undefined
 
   constructor(
     path: string | string[],
@@ -44,7 +44,7 @@ export class ResolveContext<Sanitized> {
     this.#validationContext = validationContext
   }
 
-  get validationContext(): Record<string, unknown> | undefined {
+  get validationContext(): ValidationContext | undefined {
     return this.#validationContext
   }
 

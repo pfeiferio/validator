@@ -5,6 +5,7 @@ import {ErrorStore} from '../schema/ErrorStore.js'
 import type {SearchStore} from '../search/SearchStore.js'
 import {createIssue} from "../schema/createIssue.js";
 import type {Parameter} from "../schema/types.js";
+import type {ValidationContext} from "../schema/ParameterReference.js";
 import {overwriteSanitized} from "../nodes/ExecutionNode.js";
 import {tryRun} from "../resolver/utils.js";
 
@@ -18,7 +19,7 @@ export function validateParameter<Sanitized>(
   parameter: Parameter,
   errorStore: ErrorStore | null = null,
   globalContext: GlobalContext<Sanitized> | null = null,
-  validationContext?: Record<string, unknown> | undefined,
+  validationContext?: ValidationContext | undefined,
 ): Promise<ValidateParameterResult<Sanitized>> | ValidateParameterResult<Sanitized> {
   errorStore ??= new ErrorStore()
 

@@ -11,11 +11,16 @@ import type {ExecutionNode} from "../nodes/ExecutionNode.js";
 import {RequiredIfCtx} from "./RequiredIfCtx.js";
 import type {NodeList} from "../nodes/NodeList.js";
 
-export type ValidationHandle<T> = (value: RawValue, ctx?: Record<string, unknown> | undefined) => T
-export type AsyncValidationHandle<T> = (value: RawValue, ctx?: Record<string, unknown> | undefined) => Promise<T>
+export type ValidationContext = {
+  global: Record<string, unknown> | undefined
+  local: Record<string, unknown> | undefined
+}
 
-export type PostValidationHandle<T> = (value: T, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, ExecutionNode[] | NodeList>) => T
-export type AsyncPostValidationHandle<T> = (value: T, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, ExecutionNode[] | NodeList>) => Promise<T>
+export type ValidationHandle<T> = (value: RawValue, ctx?: ValidationContext) => T
+export type AsyncValidationHandle<T> = (value: RawValue, ctx?: ValidationContext) => Promise<T>
+
+export type PostValidationHandle<T> = (value: T, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, ExecutionNode[] | NodeList>, ctx?: ValidationContext) => T
+export type AsyncPostValidationHandle<T> = (value: T, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, ExecutionNode[] | NodeList>, ctx?: ValidationContext) => Promise<T>
 
 export type ShapeValidationHandle = (value: unknown[]) => void
 export type ParameterMode = 'one' | 'many'
@@ -306,7 +311,7 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
     return !!(this.#postValidationHandle ?? this.#asyncPostValidationHandle)
   }
 
-  postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, ExecutionNode[] | NodeList>): SanitizedValue<T> | Promise<SanitizedValue<T>> {
+  postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, ExecutionNode[] | NodeList>, ctx?: ValidationContext): SanitizedValue<T> | Promise<SanitizedValue<T>> {
 
 
     if (this.#noValidate) {
@@ -319,7 +324,7 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
       return value as SanitizedValue<T>
     }
 
-    const validationResult = handle(value as T, sanitizedValues, node, nodes)
+    const validationResult = handle(value as T, sanitizedValues, node, nodes, ctx)
     const resultIsPromise = validationResult instanceof Promise
 
     if (this.#asyncPostValidationHandle) {
@@ -332,7 +337,7 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
     return validationResult as SanitizedValue<T>
   }
 
-  validate(value: unknown, ctx?: Record<string, unknown> | undefined): SanitizedValue<T> | Promise<SanitizedValue<T>> {
+  validate(value: unknown, ctx?: ValidationContext): SanitizedValue<T> | Promise<SanitizedValue<T>> {
 
     if (this.#noValidate) {
       return value as SanitizedValue<T>

@@ -5,6 +5,7 @@ import type {
   PostValidationHandle,
   Rule,
   ShapeValidationHandle,
+  ValidationContext,
   ValidationHandle
 } from "./ParameterReference.js";
 import type {MetaValue, SanitizedValue, Value} from "../resolver/utils.js";
@@ -57,9 +58,9 @@ export interface ParameterBase<T> {
 
   validateShape(values: unknown[]): this
 
-  validate(value: unknown, validationContext?: Record<string, unknown> | undefined): SanitizedValue<T> | Promise<SanitizedValue<T>>
+  validate(value: unknown, ctx?: ValidationContext): SanitizedValue<T> | Promise<SanitizedValue<T>>
 
-  postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, ExecutionNode[] | NodeList>): SanitizedValue<T> | Promise<SanitizedValue<T>>
+  postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, ExecutionNode[] | NodeList>, ctx?: ValidationContext): SanitizedValue<T> | Promise<SanitizedValue<T>>
 
   get hasPostValidation(): boolean
 }
@@ -77,9 +78,9 @@ export interface ParameterSync<T = unknown> extends ParameterBase<T> {
 
   get hasPostValidation(): boolean
 
-  validate(value: unknown, validationContext?: Record<string, unknown> | undefined): SanitizedValue<T>
+  validate(value: unknown, ctx?: ValidationContext): SanitizedValue<T>
 
-  postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, ExecutionNode[] | NodeList>): SanitizedValue<T> | Promise<SanitizedValue<T>>
+  postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, ExecutionNode[] | NodeList>, ctx?: ValidationContext): SanitizedValue<T> | Promise<SanitizedValue<T>>
 }
 
 export interface ParameterAsync<T = unknown> extends ParameterBase<T> {
@@ -93,9 +94,9 @@ export interface ParameterAsync<T = unknown> extends ParameterBase<T> {
 
   postValidation(fn: AsyncPostValidationHandle<T>): ParameterAsync<T>
 
-  validate(value: unknown, validationContext?: Record<string, unknown> | undefined): SanitizedValue<T> | Promise<SanitizedValue<T>>
+  validate(value: unknown, ctx?: ValidationContext): SanitizedValue<T> | Promise<SanitizedValue<T>>
 
-  postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, NodeList>): SanitizedValue<T> | Promise<SanitizedValue<T>>
+  postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, NodeList>, ctx?: ValidationContext): SanitizedValue<T> | Promise<SanitizedValue<T>>
 
   get hasPostValidation(): boolean
 }
@@ -105,9 +106,9 @@ export interface ParameterRaw<T = unknown> extends ParameterBase<T> {
 
   get isNoValidate(): true
 
-  validate(value: unknown, validationContext?: Record<string, unknown> | undefined): SanitizedValue<T>
+  validate(value: unknown, ctx?: ValidationContext): SanitizedValue<T>
 
-  postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, NodeList>): SanitizedValue<T> | Promise<SanitizedValue<T>>
+  postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, NodeList>, ctx?: ValidationContext): SanitizedValue<T> | Promise<SanitizedValue<T>>
 
   get hasPostValidation(): boolean
 }
@@ -123,9 +124,9 @@ export interface ParameterUnvalidated<T = unknown> extends ParameterBase<T> {
 
   noValidation(): ParameterRaw<T>
 
-  validate(value: unknown, validationContext?: Record<string, unknown> | undefined): SanitizedValue<T> | Promise<SanitizedValue<T>>
+  validate(value: unknown, ctx?: ValidationContext): SanitizedValue<T> | Promise<SanitizedValue<T>>
 
-  postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, NodeList>): SanitizedValue<T> | Promise<SanitizedValue<T>>
+  postValidate(value: unknown, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, NodeList>, ctx?: ValidationContext): SanitizedValue<T> | Promise<SanitizedValue<T>>
 }
 
 export type Parameter<T = unknown> =
