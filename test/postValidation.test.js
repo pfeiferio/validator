@@ -268,19 +268,19 @@ describe('postValidation - data manipulation', () => {
     assert.deepEqual(param.value, ['FOO', 'BAR'])
   })
 
-  test('asyncPostValidation only transforms valid items, not INVALID ones', async () => {
+  test('asyncPostValidation does not run when array contains invalid items', async () => {
+    let called = false
     const param = new ParameterReference('numbers').many().validation((v) => {
       if (typeof v !== 'number') throw new Error('not a number')
       return v
     })
-    param.asyncPostValidation(async (value) => value * 10)
+    param.asyncPostValidation(async (value) => { called = true; return value * 10 })
 
     const schema = new Schema()
     schema.add(param)
     await schema.validate({numbers: [1, 'bad', 3]})
 
-    assert.equal(param.value[0], 10)
-    assert.equal(param.value[2], 30)
+    assert.equal(called, false)
   })
 
   test('postValidation transforms scalar value', () => {
@@ -303,6 +303,53 @@ describe('postValidation - data manipulation', () => {
     await schema.validate({name: 'alice'})
 
     assert.equal(param.value, 'ALICE')
+  })
+})
+
+describe('postValidation - skipped on validation failure', () => {
+
+  test('postValidation does not run when validation throws', () => {
+    let called = false
+    const param = new ParameterReference('age').validation((v) => {
+      if (v < 0) throw new Error('negative')
+      return v
+    })
+    param.postValidation(() => { called = true })
+
+    const schema = new Schema()
+    schema.add(param)
+    schema.validate({age: -1})
+
+    assert.equal(called, false)
+  })
+
+  test('asyncPostValidation does not run when validation throws', async () => {
+    let called = false
+    const param = new ParameterReference('age').validation((v) => {
+      if (v < 0) throw new Error('negative')
+      return v
+    })
+    param.asyncPostValidation(async () => { called = true })
+
+    const schema = new Schema()
+    schema.add(param)
+    await schema.validate({age: -1})
+
+    assert.equal(called, false)
+  })
+
+  test('postValidation does not run when a sibling parameter fails', () => {
+    let called = false
+    const name = new ParameterReference('name').validation((v) => checkString(v))
+    const age = new ParameterReference('age').validation((v) => checkNumber(v))
+    age.postValidation(() => { called = true })
+
+    const schema = new Schema()
+    schema.add(name)
+    schema.add(age)
+    schema.validate({name: 123, age: 30})
+
+    assert.equal(called, false)
   })
 })
 

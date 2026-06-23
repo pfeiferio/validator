@@ -141,9 +141,13 @@ export class Schema<AsyncGuarantee extends boolean> {
     }
 
     if (validationResult instanceof Promise) {
-      return validationResult.then(validationResult => walkPostParameters(validationResult, 0))
+      return validationResult.then(validationResult => {
+        if (validationResult.errors.hasErrors()) return validationResult
+        return walkPostParameters(validationResult, 0)
+      })
     }
 
+    if (validationResult.errors.hasErrors()) return validationResult
     return walkPostParameters(validationResult, 0)
   }
 
