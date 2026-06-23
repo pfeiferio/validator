@@ -44,20 +44,21 @@ export class Schema<AsyncGuarantee extends boolean> {
     idx: number,
     errors: ErrorStore,
     global: GlobalContext<unknown>,
-    result: Record<string, unknown>
+    result: Record<string, unknown>,
+    validationContext: Record<string, unknown> | undefined,
   ): SchemaValidationResultEntries | Promise<SchemaValidationResultEntries> {
 
     for (let i = idx; i < this.#parameters.length; i++) {
       const param = this.#parameters[i]!
       param.freeze()
-      const validation = validateParameter(store, param, errors, global)
+      const validation = validateParameter(store, param, errors, global, validationContext)
 
       assertValidationMatch(validation, param.useAsyncValidation, param.name)
 
       if (validation instanceof Promise) {
         return validation.then(() => {
           result[param.name] = param.value
-          return this.#walkParameters(store, i + 1, errors, global, result)
+          return this.#walkParameters(store, i + 1, errors, global, result, validationContext)
         })
       }
 
@@ -93,11 +94,11 @@ export class Schema<AsyncGuarantee extends boolean> {
     }
   }
 
-  validate(store: SearchStore | Record<string, unknown>): Promise<SchemaValidationResult> | SchemaValidationResult {
+  validate(store: SearchStore | Record<string, unknown>, validationContext?: Record<string, unknown> | undefined): Promise<SchemaValidationResult> | SchemaValidationResult {
 
     const result: Record<string, unknown> = {}
     const errorStore = new ErrorStore()
-    const validationResult = this.#validate(errorStore, store, result)
+    const validationResult = this.#validate(errorStore, store, result, validationContext)
 
     const walkPostParameters = (validationResult: SchemaValidationResult, idx: number = 0): Promise<SchemaValidationResult> | SchemaValidationResult => {
 
@@ -149,7 +150,10 @@ export class Schema<AsyncGuarantee extends boolean> {
 
   #validate(
     errors: ErrorStore,
-    store: SearchStore | Record<string, unknown>, result: Record<string, unknown>): Promise<SchemaValidationResult> | SchemaValidationResult {
+    store: SearchStore | Record<string, unknown>,
+    result: Record<string, unknown>,
+    validationContext: Record<string, unknown> | undefined,
+  ): Promise<SchemaValidationResult> | SchemaValidationResult {
 
     if (!(store instanceof SearchStore)) {
       store = new SearchStore(store)
@@ -157,7 +161,7 @@ export class Schema<AsyncGuarantee extends boolean> {
 
     const global = new GlobalContext<unknown>()
 
-    const entries = this.#walkParameters(store, 0, errors, global, result)
+    const entries = this.#walkParameters(store, 0, errors, global, result, validationContext)
 
     if (entries instanceof Promise) {
       return entries.then((entries) => {

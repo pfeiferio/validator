@@ -1,6 +1,6 @@
 import type {ResolveContext} from "../context/ResolveContext.js";
 import type {ErrorStore} from "../schema/ErrorStore.js";
-import {tryRun, type ResolvedResult, type ResolveResult, type Value} from "./utils.js";
+import {type ResolvedResult, type ResolveResult, tryRun, type Value} from "./utils.js";
 import {createIssue} from "../schema/createIssue.js";
 import type {Parameter} from "../schema/types.js";
 import {COLLECT_AS_VALUE, collectNewNode} from "../nodes/utils.js";
@@ -31,7 +31,7 @@ export function resolveValue<Sanitized>(
   }
 
   const result = tryRun(
-    () => parameter.validate(value),
+    () => parameter.validate(value, ctx.validationContext),
     onSuccess,
     onError,
     () => ({raw, sanitized})

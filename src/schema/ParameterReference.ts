@@ -11,8 +11,8 @@ import type {ExecutionNode} from "../nodes/ExecutionNode.js";
 import {RequiredIfCtx} from "./RequiredIfCtx.js";
 import type {NodeList} from "../nodes/NodeList.js";
 
-export type ValidationHandle<T> = (value: RawValue) => T
-export type AsyncValidationHandle<T> = (value: RawValue) => Promise<T>
+export type ValidationHandle<T> = (value: RawValue, ctx?: Record<string, unknown> | undefined) => T
+export type AsyncValidationHandle<T> = (value: RawValue, ctx?: Record<string, unknown> | undefined) => Promise<T>
 
 export type PostValidationHandle<T> = (value: T, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, ExecutionNode[] | NodeList>) => T
 export type AsyncPostValidationHandle<T> = (value: T, sanitizedValues: Record<string, unknown>, node: ExecutionNode, nodes: Map<Parameter, ExecutionNode[] | NodeList>) => Promise<T>
@@ -331,7 +331,7 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
     return validationResult as SanitizedValue<T>
   }
 
-  validate(value: unknown): SanitizedValue<T> | Promise<SanitizedValue<T>> {
+  validate(value: unknown, ctx?: Record<string, unknown> | undefined): SanitizedValue<T> | Promise<SanitizedValue<T>> {
 
     if (this.#noValidate) {
       return value as SanitizedValue<T>
@@ -343,7 +343,7 @@ export class ParameterReference<T, AsyncGuarantee extends boolean> implements Pa
       return value as SanitizedValue<T>
     }
 
-    const validationResult = handle(value)
+    const validationResult = handle(value, ctx)
     const resultIsPromise = validationResult instanceof Promise
 
     if (this.useAsyncValidation) {

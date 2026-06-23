@@ -17,11 +17,14 @@ export function validateParameter<Sanitized>(
   store: SearchStore,
   parameter: Parameter,
   errorStore: ErrorStore | null = null,
-  globalContext: GlobalContext<Sanitized> | null = null
+  globalContext: GlobalContext<Sanitized> | null = null,
+  validationContext?: Record<string, unknown> | undefined,
 ): Promise<ValidateParameterResult<Sanitized>> | ValidateParameterResult<Sanitized> {
   errorStore ??= new ErrorStore()
+
   const ctx = new ResolveContext<Sanitized>(parameter.name, {
-    global: globalContext ?? new GlobalContext()
+    global: globalContext ?? new GlobalContext(),
+    validationContext
   })
 
   const tryRunResult = tryRun(() => resolveFromStore(
